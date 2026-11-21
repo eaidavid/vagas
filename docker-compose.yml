@@ -19,6 +19,22 @@ services:
     expose:
       - "3000"
 
+  # Robô de candidatura (Chromium + tela remota em /tela, protegida por VNC_PASSWORD)
+  robo:
+    build: ./robo
+    restart: unless-stopped
+    environment:
+      API_URL: http://vagas:3000
+      ROBO_TOKEN: ${ROBO_TOKEN}
+      VNC_PASSWORD: ${VNC_PASSWORD}
+    volumes:
+      - robo-data:/data   # perfil do navegador: os logins feitos pela tela continuam valendo
+    shm_size: 1gb
+    depends_on:
+      - vagas
+    expose:
+      - "6080"
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -36,3 +52,4 @@ services:
 volumes:
   vagas-data:
   vagas-db:
+  robo-data:

@@ -33,7 +33,7 @@ export async function claimNext() {
 const MAX_ATTEMPTS = 3;
 
 /* Resultado do robô: aplicada | precisa_voce | erro (tenta de novo com espera crescente até 3 vezes) */
-export async function report(id, { status, text, error, questions, screenshot }) {
+export async function report(id, { status, text, error, questions, screenshot, filled }) {
   const { rows } = await q('select * from applications where id = $1', [id]);
   const app = rows[0];
   if (!app) return null;
@@ -48,7 +48,7 @@ export async function report(id, { status, text, error, questions, screenshot })
       [id, last ? 'falhou' : 'aguardando', error || 'Erro desconhecido', String(15 * 2 ** (app.attempts - 1))],
     );
   }
-  await addLog(id, text || status, { error: error || undefined, questions: questions || undefined, screenshot: screenshot || undefined });
+  await addLog(id, text || status, { error: error || undefined, questions: questions?.length ? questions : undefined, screenshot: screenshot || undefined, filled: filled?.length ? filled.slice(0, 60) : undefined });
   return true;
 }
 

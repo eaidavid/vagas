@@ -38,6 +38,8 @@ ENV
   chmod 600 .env
   NEW_ENV=1
 fi
+# Instalações antigas: acrescenta a senha da tela do robô se ainda não existir
+grep -q '^VNC_PASSWORD=' .env || echo "VNC_PASSWORD=$(openssl rand -base64 12 | tr -d '/+=' | cut -c1-8)" >> .env
 
 say "Ligando ao proxy do Coolify (HTTPS automático)"
 CMD="$(docker inspect coolify-proxy --format '{{join .Config.Cmd " "}}' 2>/dev/null || true)"
@@ -62,6 +64,19 @@ services:
       - traefik.http.routers.vagas-http.middlewares=vagas-https
       - traefik.http.middlewares.vagas-https.redirectscheme.scheme=https
       - traefik.http.services.vagas.loadbalancer.server.port=3000
+  robo:
+    networks: [default, coolify]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.routers.vagas-tela.rule=Host(\`$DOMAIN\`) && PathPrefix(\`/tela\`)
+      - traefik.http.routers.vagas-tela.entrypoints=$EP_HTTPS
+      - traefik.http.routers.vagas-tela.tls=true
+      - traefik.http.routers.vagas-tela.tls.certresolver=$RESOLVER
+      - traefik.http.routers.vagas-tela.priority=100
+      - traefik.http.routers.vagas-tela.middlewares=vagas-tela-strip
+      - traefik.http.middlewares.vagas-tela-strip.stripprefix.prefixes=/tela
+      - traefik.http.services.vagas-tela.loadbalancer.server.port=6080
 networks:
   coolify:
     external: true
@@ -93,4 +108,7 @@ if [ "$NEW_ENV" = 1 ]; then
 else
   echo "Senha:   a mesma de antes (está em $DIR/.env)"
 fi
+echo "Tela do robô: https://$DOMAIN/tela/vnc.html?path=tela/websockify&autoconnect=1&resize=scale"
+echo "Senha da tela: $VNC_PASSWORD   (também em $DIR/.env)"
+echo "O robô começa em MODO ENSAIO: preenche e não envia. Desligue em Perfil → Robô."
 echo "Se o HTTPS não abrir logo, espere o DNS de '$DOMAIN' propagar; o certificado sai sozinho."

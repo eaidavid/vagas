@@ -10,6 +10,13 @@ import { ATS_INFO } from './ats.js';
 
 const DATA = process.env.DATA_DIR || '/data';
 const CV = path.join(DATA, 'curriculo.pdf');
+const PRINTS = path.join(DATA, 'prints');
+
+/* Ajustes do robô (Perfil → Robô). Começa ligado e em modo ensaio: preenche tudo e não envia. */
+const ROBO_DEFAULT = { ligado: true, ensaio: true, limiteDia: 20, horaInicio: 8, horaFim: 22, pausaMin: 2, pausaMax: 6 };
+export async function roboConfig() {
+  return { ...ROBO_DEFAULT, ...(await kvGet('roboConfig', {})) };
+}
 
 const summary = (r) => ({
   id: r.id,
@@ -51,6 +58,7 @@ export function registerRoutes(app) {
       lastCollect: await kvGet('lastCollect'),
       collecting: isRunning(),
       roboLastSeen: await kvGet('roboLastSeen'),
+      robo: await roboConfig(),
     };
   });
 
@@ -144,6 +152,31 @@ export function registerRoutes(app) {
     return { ok: true };
   });
 
+  /* Robô: ajustes e prints */
+  app.get('/api/robo/config', async () => roboConfig());
+  app.put('/api/robo/config', async (req) => {
+    const b = req.body || {};
+    const cur = await roboConfig();
+    const num = (v, d, min, max) => (Number.isFinite(Number(v)) ? Math.max(min, Math.min(max, Number(v))) : d);
+    const next = {
+      ligado: b.ligado ?? cur.ligado,
+      ensaio: b.ensaio ?? cur.ensaio,
+      limiteDia: num(b.limiteDia, cur.limiteDia, 1, 100),
+      horaInicio: num(b.horaInicio, cur.horaInicio, 0, 23),
+      horaFim: num(b.horaFim, cur.horaFim, 1, 24),
+      pausaMin: num(b.pausaMin, cur.pausaMin, 0, 60),
+      pausaMax: num(b.pausaMax, cur.pausaMax, 0, 120),
+    };
+    await kvSet('roboConfig', next);
+    return next;
+  });
+  app.get('/api/prints/:name', async (req, reply) => {
+    const name = path.basename(req.params.name);
+    const file = path.join(PRINTS, name);
+    if (!/^\d+-\d+\.jpg$/.test(name) || !existsSync(file)) return reply.code(404).send({ error: 'Print não encontrado.' });
+    return reply.type('image/jpeg').header('cache-control', 'private, max-age=86400').send(await readFile(file));
+  });
+
   /* Perfil */
   app.get('/api/profile', async () => ({ ...(await getProfile()), temCurriculo: existsSync(CV) }));
   app.put('/api/profile', async (req) => {
@@ -185,13 +218,27 @@ export function registerRoutes(app) {
   app.post('/api/public/robo/proxima', async (req, reply) => {
     if (!robo(req, reply)) return;
     await kvSet('roboLastSeen', new Date().toISOString());
+    const config = await roboConfig();
+    if (!config.ligado) return { pausado: true };
+    const hora = Number(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: 'numeric', hour12: false })) % 24;
+    if (hora < config.horaInicio || hora >= config.horaFim) return { foraDoHorario: true };
+    const { rows } = await q("select count(*)::int n from applications where status = 'aplicada' and (updated_at at time zone 'America/Sao_Paulo')::date = (now() at time zone 'America/Sao_Paulo')::date");
+    if (rows[0].n >= config.limiteDia) return { limite: true };
     const next = await claimNext();
     if (!next) return { vazia: true };
-    return { ...next, profile: await getProfile(), temCurriculo: existsSync(CV) };
+    return { ...next, profile: await getProfile(), temCurriculo: existsSync(CV), config };
   });
   app.post('/api/public/robo/:id/resultado', async (req, reply) => {
     if (!robo(req, reply)) return;
-    await report(Number(req.params.id), req.body || {});
+    const body = { ...(req.body || {}) };
+    // Print da tela do robô: guardado no servidor, aparece no histórico da candidatura
+    if (body.screenshot) {
+      const name = `${Number(req.params.id)}-${Date.now()}.jpg`;
+      await mkdir(PRINTS, { recursive: true });
+      await writeFile(path.join(PRINTS, name), Buffer.from(String(body.screenshot), 'base64'));
+      body.screenshot = name;
+    }
+    await report(Number(req.params.id), body);
     return { ok: true };
   });
   app.get('/api/public/robo/curriculo', async (req, reply) => {

@@ -11,8 +11,14 @@ export default function Perfil({ onChange }) {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [collect, setCollect] = useState(null);
+  const [robo, setRobo] = useState(null);
 
-  useEffect(() => { api('/profile').then(setP); }, []);
+  useEffect(() => { api('/profile').then(setP); api('/robo/config').then(setRobo).catch(() => {}); }, []);
+  const setRoboCfg = async (patch) => {
+    const next = { ...robo, ...patch };
+    setRobo(next);
+    try { setRobo(await api('/robo/config', { method: 'PUT', body: next })); } catch (e) { toast(e.message); }
+  };
   useEffect(() => {
     const load = () => api('/collect').then(setCollect).catch(() => {});
     load();
@@ -90,6 +96,34 @@ export default function Perfil({ onChange }) {
               </details>
             )}
           </section>
+
+          {robo && (
+            <section className="panel">
+              <h2>Robô</h2>
+              <div className="switch"><span>Ligado</span><Toggle on={robo.ligado} onChange={(v) => setRoboCfg({ ligado: v })} /></div>
+              <div className="switch">
+                <span>Modo ensaio<br /><span className="muted small">Preenche e para antes de enviar, com print pra conferir</span></span>
+                <Toggle on={robo.ensaio} onChange={(v) => setRoboCfg({ ensaio: v })} />
+              </div>
+              <div className="grid2">
+                <div>
+                  <label className="label" htmlFor="robo-limite">Candidaturas por dia (no máximo)</label>
+                  <input id="robo-limite" className="input" type="number" min="1" max="100" value={robo.limiteDia} onChange={(e) => setRobo({ ...robo, limiteDia: e.target.value })} onBlur={() => setRoboCfg({})} />
+                </div>
+                <div>
+                  <label className="label" htmlFor="robo-horario">Horário (de / até)</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input id="robo-horario" className="input" type="number" min="0" max="23" value={robo.horaInicio} onChange={(e) => setRobo({ ...robo, horaInicio: e.target.value })} onBlur={() => setRoboCfg({})} />
+                    <input className="input" type="number" min="1" max="24" aria-label="Até" value={robo.horaFim} onChange={(e) => setRobo({ ...robo, horaFim: e.target.value })} onBlur={() => setRoboCfg({})} />
+                  </div>
+                </div>
+              </div>
+              <div className="switch" style={{ marginTop: 8 }}>
+                <span>Tela do robô<br /><span className="muted small">Pra fazer login no LinkedIn e na Gupy uma vez, ou resolver um CAPTCHA</span></span>
+                <a className="btn sm" href="/tela/vnc.html?path=tela/websockify&autoconnect=1&resize=scale" target="_blank" rel="noreferrer">Abrir</a>
+              </div>
+            </section>
+          )}
 
           <section className="panel">
             <h2>O que buscar</h2>

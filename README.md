@@ -31,11 +31,26 @@ habilidades do currículo citadas na vaga e data de publicação. Vaga que fere 
 
 Vagas repetidas entre fontes (mesma empresa e cargo, ou mesmo link de candidatura) viram uma só.
 
-### Robô (próxima etapa)
-A fila já está pronta para ele: `POST /api/public/robo/proxima` entrega a próxima vaga com o perfil
-(trava a vaga para não aplicar duas vezes) e `POST /api/public/robo/:id/resultado` devolve
-`aplicada`, `precisa_voce` (com `questions`) ou erro (nova tentativa em 15, 30 min; depois "não deu certo").
-Autenticação: `Authorization: Bearer $ROBO_TOKEN`.
+### Robô de candidatura (`robo/`)
+Um contêiner com Chromium que pega uma vaga por vez da fila e aplica.
+
+- **Motor genérico de formulários** (`robo/src/fill.js`): lê cada campo visível e a pergunta dele (inclusive grupos de
+  opções e listas que filtram enquanto digita), responde com os dados do Perfil ou com o banco de respostas e anexa o
+  currículo. Perguntas de diversidade (gênero, raça etc.) recebem "prefiro não informar".
+- **Pergunta que não sabe = "precisa de você"**: a Fila mostra a pergunta (com as opções do site, quando há) e, quando
+  você responde, a resposta vai para o banco e o robô tenta de novo.
+- **Por site** (`robo/src/apply.js`): Lever e Greenhouse direto no formulário; LinkedIn pela Candidatura simplificada
+  (modal com etapas) ou seguindo o botão para o site externo; Gupy pelas etapas da candidatura; outros sites pelo
+  formulário que aparecer.
+- **Modo ensaio (começa ligado)**: preenche tudo e para antes de enviar, com print da tela na Fila.
+- **Limites**: liga/desliga, candidaturas por dia, horário e pausa de 2 a 6 min entre envios (Perfil → Robô).
+- **Tela do robô** (`/tela`, com senha): para fazer login no LinkedIn e na Gupy uma vez (o perfil do navegador fica
+  salvo) e para resolver CAPTCHA.
+
+Testado em formulários reais do Lever e do Greenhouse em modo ensaio. LinkedIn e Gupy exigem login e só podem ser
+validados na VPS com as suas contas.
+
+API do robô (token `ROBO_TOKEN`): `POST /api/public/robo/proxima` e `POST /api/public/robo/:id/resultado`.
 
 ## Instalar na VPS (Coolify)
 1. DNS: registro A `vagas` apontando para o IP da VPS.
@@ -44,7 +59,7 @@ Autenticação: `Authorization: Bearer $ROBO_TOKEN`.
    curl -fsSL https://raw.githubusercontent.com/eaidavid/vagas/main/deploy/install.sh | bash
    ```
    Repositório privado: `GH_TOKEN=<token só de leitura> bash install.sh`.
-3. O instalador mostra o link, o e-mail e a senha. Rodar de novo atualiza sem perder nada.
+3. O instalador mostra o link, o e-mail, a senha do painel e a senha da tela do robô. Rodar de novo atualiza sem perder nada.
    A atualização automática confere a branch `main` a cada 5 minutos.
 
 ## Rodar localmente

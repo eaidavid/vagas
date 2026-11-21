@@ -5,3 +5,4 @@ docker-compose.vps.yml
 .vagas-branch
 *.log
 dist-demo/
+robo/node_modules/

@@ -13,11 +13,12 @@ const GROUPS = [
 
 export default function Fila({ onChange }) {
   const [apps, setApps] = useState(null);
+  const [roboSeen, setRoboSeen] = useState(null);
   const [robo, setRobo] = useState(null);
 
   const load = useCallback(async () => {
     setApps(await api('/applications'));
-    api('/stats').then((s) => setRobo(s.roboLastSeen || null)).catch(() => {});
+    api('/stats').then((s) => { setRoboSeen(s.roboLastSeen || null); setRobo(s.robo || null); }).catch(() => {});
   }, []);
   useEffect(() => {
     load();
@@ -36,7 +37,7 @@ export default function Fila({ onChange }) {
     }
   };
 
-  const roboOn = robo && Date.now() - new Date(robo).getTime() < 5 * 60000;
+  const roboOn = roboSeen && Date.now() - new Date(roboSeen).getTime() < 5 * 60000;
 
   return (
     <>
@@ -45,7 +46,12 @@ export default function Fila({ onChange }) {
         <div className="wrap">
           {!roboOn && (
             <div className="notice">
-              O robô de candidatura ainda não está ligado. Enquanto isso, abra cada vaga, aplique e toque em <b>Apliquei</b> pra manter o histórico em dia.
+              O robô não está conectado agora. As vagas esperam na fila; enquanto isso você pode abrir cada uma, aplicar e tocar em <b>Apliquei</b>.
+            </div>
+          )}
+          {roboOn && robo?.ensaio && (
+            <div className="notice">
+              <b>Modo ensaio:</b> o robô preenche cada formulário e para antes de enviar, com um print pra você conferir. Desligue em Perfil → Robô quando estiver confiante.
             </div>
           )}
           {apps && !apps.length && (
@@ -73,6 +79,8 @@ export default function Fila({ onChange }) {
 function AppCard({ a, act }) {
   const [showLog, setShowLog] = useState(false);
   const lastQ = [...a.log].reverse().find((l) => l.questions)?.questions || [];
+  const lastShot = [...a.log].reverse().find((l) => l.screenshot)?.screenshot;
+  const lastFilled = [...a.log].reverse().find((l) => l.filled)?.filled || [];
   const [answers, setAnswers] = useState({});
   const j = a.job;
   return (
@@ -89,8 +97,15 @@ function AppCard({ a, act }) {
         <div style={{ marginTop: 6 }}>
           {lastQ.map((q, i) => (
             <div key={i}>
-              <label className="label">{q.pergunta}</label>
-              <input className="input" value={answers[i] || ''} onChange={(e) => setAnswers({ ...answers, [i]: e.target.value })} />
+              <label className="label" htmlFor={`q-${a.id}-${i}`}>{q.pergunta}</label>
+              {q.opcoes?.length ? (
+                <select id={`q-${a.id}-${i}`} className="select" value={answers[i] || ''} onChange={(e) => setAnswers({ ...answers, [i]: e.target.value })}>
+                  <option value="">Escolha…</option>
+                  {q.opcoes.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              ) : (
+                <input id={`q-${a.id}-${i}`} className="input" value={answers[i] || ''} onChange={(e) => setAnswers({ ...answers, [i]: e.target.value })} />
+              )}
             </div>
           ))}
           <div className="row">
@@ -101,6 +116,11 @@ function AppCard({ a, act }) {
         </div>
       )}
 
+      {lastShot && (
+        <a className="shot" href={`/api/prints/${lastShot}`} target="_blank" rel="noreferrer" title="Abrir o print em tamanho real">
+          <img src={`/api/prints/${lastShot}`} alt="Print da tela do robô" loading="lazy" />
+        </a>
+      )}
       <div className="row">
         <a className="btn sm" href={j.applyUrl || j.url} target="_blank" rel="noreferrer">Abrir vaga {Icon.out(14)}</a>
         {['aguardando', 'precisa_voce', 'falhou'].includes(a.status) && (
@@ -117,6 +137,12 @@ function AppCard({ a, act }) {
       {showLog && (
         <div className="log">
           {a.log.map((l, i) => <div key={i}>{new Date(l.at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })} · {l.text}</div>)}
+          {lastFilled.length > 0 && (
+            <div className="filled">
+              <b>O que o robô preencheu</b>
+              {lastFilled.map((f, i) => <div key={i}><span>{f.campo}</span> {f.valor}</div>)}
+            </div>
+          )}
         </div>
       )}
     </article>
