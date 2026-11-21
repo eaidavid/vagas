@@ -44,7 +44,10 @@ Um contêiner com Chromium que pega uma vaga por vez da fila e aplica.
   formulário que aparecer.
 - **Modo ensaio (começa ligado)**: preenche tudo e para antes de enviar, com print da tela na Fila.
 - **Limites**: liga/desliga, candidaturas por dia, horário e pausa de 2 a 6 min entre envios (Perfil → Robô).
-- **Login automático**: com o e-mail e a senha salvos em Perfil → Robô → Contas (senha criptografada com AES-256-GCM no
+- **Conectar conta (LinkedIn, Gupy)**: o botão "Conectar" no Perfil abre, dentro do app, o navegador do robô já na
+  página de login. Você entra como quiser (inclusive "Continuar com Google"); o robô detecta a sessão, o app mostra
+  "Conectado" e a janela fecha. "Desconectar" apaga a sessão daquele site.
+- **Login automático**: opcionalmente, com o e-mail e a senha salvos em Perfil → Robô → Contas (senha criptografada com AES-256-GCM no
   banco da VPS), o robô entra sozinho no LinkedIn e na Gupy quando o site pedir. Se pedirem código de verificação, ele
   para e avisa.
 - **Progresso ao vivo**: a Fila mostra o estado do robô (aplicando, esperando, pausado, fora do horário, limite) e, na

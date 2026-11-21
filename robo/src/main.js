@@ -40,7 +40,21 @@ const context = await chromium.launchPersistentContext(PROFILE_DIR, {
 if (!context.pages().length) await context.newPage();
 log(`robô ligado (${process.env.DISPLAY ? 'com tela' : 'sem tela'}), API ${API}`);
 
-/* Comandos do painel (ex.: abrir a página de login na tela do robô para você entrar com Google) */
+/* Sessões abertas no navegador do robô (é isso que o botão "Conectar" do painel cria) */
+const DOMAINS = { linkedin: /(^|\.)linkedin\.com$/, gupy: /(^|\.)gupy\.io$/ };
+const SESSION_OK = {
+  linkedin: (c) => c.some((k) => k.name === 'li_at' && k.value),
+  gupy: (c) => c.some((k) => /token|auth|sess|candidate/i.test(k.name) && !/^(_g|_fb|amp|mp_|ajs)/i.test(k.name) && k.value.length > 15),
+};
+async function sessions() {
+  const all = await context.cookies().catch(() => []);
+  const out = {};
+  for (const site of Object.keys(DOMAINS)) out[site] = SESSION_OK[site](all.filter((k) => DOMAINS[site].test(k.domain.replace(/^\./, ''))));
+  return out;
+}
+
+/* Comandos do painel: abrir a página de login (para você entrar pela janela "Conectar") ou desconectar */
+let lastSessions = 0;
 async function checkCommands() {
   try {
     const cmd = await call('/comando');
@@ -50,10 +64,21 @@ async function checkCommands() {
       await page.goto(cmd.abrir, { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {});
       log(`abri ${cmd.abrir} na tela do robô`);
     }
+    if (cmd?.desconectar && DOMAINS[cmd.desconectar]) {
+      const keep = (await context.cookies()).filter((k) => !DOMAINS[cmd.desconectar].test(k.domain.replace(/^\./, '')));
+      await context.clearCookies();
+      if (keep.length) await context.addCookies(keep);
+      log(`desconectei ${cmd.desconectar}`);
+      lastSessions = 0;
+    }
   } catch { /* sem comando */ }
+  if (Date.now() - lastSessions > 4000) {
+    lastSessions = Date.now();
+    try { await call('/sessoes', await sessions()); } catch { /* informativo */ }
+  }
 }
 async function wait(ms) {
-  for (let t = 0; t < ms; t += 5000) { await checkCommands(); await sleep(Math.min(5000, ms - t)); }
+  for (let t = 0; t < ms; t += 3000) { await checkCommands(); await sleep(Math.min(3000, ms - t)); }
 }
 
 let idle = 0;

@@ -195,12 +195,25 @@ export function registerRoutes(app) {
     await kvSet('roboConfig', next);
     return next;
   });
-  /* Abre a página de login no navegador do robô, para você entrar pela tela (ex.: Continuar com Google) */
+  /* Conectar conta: abre a página de login no navegador do robô e devolve a janela (tela do robô já com a senha) */
   const LOGIN_PAGES = { linkedin: 'https://www.linkedin.com/login', gupy: 'https://portal.gupy.io/', google: 'https://accounts.google.com/' };
-  app.post('/api/robo/abrir', async (req, reply) => {
+  const pushCommand = async (patch) => kvSet('roboComando', { ...(await kvGet('roboComando', {})), ...patch, at: new Date().toISOString() });
+  const telaUrl = () => `/tela/vnc.html?path=tela/websockify&autoconnect=1&resize=scale&reconnect=1${process.env.VNC_PASSWORD ? `&password=${encodeURIComponent(process.env.VNC_PASSWORD)}` : ''}`;
+  app.post('/api/robo/conectar', async (req, reply) => {
     const url = LOGIN_PAGES[req.body?.site];
     if (!url) return reply.code(400).send({ error: 'Site inválido.' });
-    await kvSet('roboComando', { abrir: url, at: new Date().toISOString() });
+    await pushCommand({ abrir: url });
+    return { ok: true, tela: telaUrl() };
+  });
+  app.post('/api/robo/abrir', async (req, reply) => { // compatibilidade
+    const url = LOGIN_PAGES[req.body?.site];
+    if (!url) return reply.code(400).send({ error: 'Site inválido.' });
+    await pushCommand({ abrir: url });
+    return { ok: true, tela: telaUrl() };
+  });
+  app.post('/api/robo/desconectar', async (req, reply) => {
+    if (!SERVICOS.includes(req.body?.site)) return reply.code(400).send({ error: 'Site inválido.' });
+    await pushCommand({ desconectar: req.body.site });
     return { ok: true };
   });
   app.get('/api/public/robo/comando', async (req, reply) => {
@@ -209,7 +222,21 @@ export function registerRoutes(app) {
     if (cmd) await q("delete from kv where key = 'roboComando'");
     return cmd || {};
   });
-  app.get('/api/robo/contas', async () => contasPublicas());
+  app.post('/api/public/robo/sessoes', async (req, reply) => {
+    if (!robo(req, reply)) return;
+    const b = req.body || {};
+    await kvSet('roboSessoes', { linkedin: !!b.linkedin, gupy: !!b.gupy, at: new Date().toISOString() });
+    await kvSet('roboLastSeen', new Date().toISOString());
+    return { ok: true };
+  });
+  app.get('/api/robo/contas', async () => {
+    const pub = await contasPublicas();
+    const ses = await kvGet('roboSessoes', {});
+    const fresh = ses.at && Date.now() - new Date(ses.at).getTime() < 2 * 60000;
+    for (const sv of SERVICOS) pub[sv].conectado = fresh ? !!ses[sv] : null; // null = robô sem contato agora
+    pub.roboAplicando = (await kvGet('roboStatus', {})).estado === 'aplicando';
+    return pub;
+  });
   app.put('/api/robo/contas/:servico', async (req, reply) => {
     if (!SERVICOS.includes(req.params.servico)) return reply.code(400).send({ error: 'Serviço inválido.' });
     const { email = '', senha = '', apagar = false } = req.body || {};

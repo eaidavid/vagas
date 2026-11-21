@@ -25,10 +25,17 @@ export default function Perfil({ onChange }) {
       setContaForm({ linkedin: { email: c.linkedin.email, senha: '' }, gupy: { email: c.gupy.email, senha: '' } });
     }).catch(() => {});
   }, []);
+  const [conectando, setConectando] = useState(null);
+  const reloadContas = () => api('/robo/contas').then(setContas).catch(() => {});
+  const desconectar = async (sv) => {
+    await api('/robo/desconectar', { method: 'POST', body: { site: sv } });
+    toast('Desconectando… em alguns segundos aparece aqui');
+    setTimeout(reloadContas, 6000);
+  };
   const salvarConta = async (servico) => {
     try {
       const c = await api(`/robo/contas/${servico}`, { method: 'PUT', body: contaForm[servico] });
-      setContas(c);
+      setContas((old) => ({ ...c, linkedin: { ...c.linkedin, conectado: old?.linkedin?.conectado ?? null }, gupy: { ...c.gupy, conectado: old?.gupy?.conectado ?? null } }));
       setContaForm((f) => ({ ...f, [servico]: { ...f[servico], senha: '' } }));
       toast(`Conta ${servico === 'linkedin' ? 'do LinkedIn' : 'da Gupy'} salva. O robô entra sozinho quando precisar.`);
     } catch (e) {
@@ -41,7 +48,7 @@ export default function Perfil({ onChange }) {
     try { setRobo(await api('/robo/config', { method: 'PUT', body: next })); } catch (e) { toast(e.message); }
   };
   useEffect(() => {
-    const load = () => { api('/collect').then(setCollect).catch(() => {}); api('/pedidos').then(setPedidos).catch(() => {}); };
+    const load = () => { api('/collect').then(setCollect).catch(() => {}); api('/pedidos').then(setPedidos).catch(() => {}); api('/robo/contas').then(setContas).catch(() => {}); };
     load();
     const h = setInterval(load, 8000);
     return () => clearInterval(h);
@@ -153,23 +160,37 @@ export default function Perfil({ onChange }) {
                   </div>
                 </div>
               </div>
-              <h3 className="sub">Contas do robô</h3>
-              <div className="muted small">Duas formas: salve e-mail e senha e ele entra sozinho quando o site pedir, ou entre você mesmo uma vez pela tela do robô (é o jeito de usar "Continuar com Google"); o login fica salvo no navegador dele. A senha fica criptografada na sua VPS e não volta para a tela.</div>
-              {contas && ['linkedin', 'gupy'].map((sv) => (
-                <div key={sv} className="conta">
-                  <label className="label" htmlFor={`conta-${sv}-email`}>
-                    {sv === 'linkedin' ? 'LinkedIn' : 'Gupy'} {contas[sv].temSenha ? <span className="tag auto">senha salva</span> : <span className="tag">sem senha</span>}
-                  </label>
-                  <div className="conta-row">
-                    <input id={`conta-${sv}-email`} className="input" type="email" autoComplete="off" placeholder="E-mail da conta" value={contaForm[sv].email} onChange={(e) => setContaForm({ ...contaForm, [sv]: { ...contaForm[sv], email: e.target.value } })} />
-                    <input className="input" type="password" autoComplete="new-password" aria-label={`Senha ${sv}`} placeholder={contas[sv].temSenha ? 'Senha salva (deixe vazio pra manter)' : 'Senha'} value={contaForm[sv].senha} onChange={(e) => setContaForm({ ...contaForm, [sv]: { ...contaForm[sv], senha: e.target.value } })} />
-                    <button className="btn sm primary" onClick={() => salvarConta(sv)}>Salvar</button>
+              <h3 className="sub">Contas dos sites de vaga</h3>
+              <div className="muted small">Toque em <b>Conectar</b>, entre na sua conta do jeito que preferir (pode ser "Continuar com Google") e pronto: fica salvo no navegador do robô.</div>
+              {contas && ['linkedin', 'gupy'].map((sv) => {
+                const nome = sv === 'linkedin' ? 'LinkedIn' : 'Gupy';
+                const c = contas[sv];
+                return (
+                  <div key={sv} className="conta">
+                    <div className="conta-head">
+                      <b>{nome}</b>
+                      {c.conectado === true && <span className="tag auto"><i className="dot" />Conectado</span>}
+                      {c.conectado === false && <span className="tag">Não conectado</span>}
+                      {c.conectado == null && <span className="tag tentativa">Robô sem contato</span>}
+                      <span style={{ flex: 1 }} />
+                      {c.conectado ? (
+                        <button className="btn sm ghost" onClick={() => desconectar(sv)}>Desconectar</button>
+                      ) : (
+                        <button className="btn sm primary" onClick={() => setConectando(sv)}>Conectar {nome}</button>
+                      )}
+                    </div>
+                    <details className="conta-senha">
+                      <summary>Ou salvar e-mail e senha {c.temSenha && <span className="tag auto">senha salva</span>}</summary>
+                      <div className="muted small" style={{ margin: '6px 0' }}>O robô usa para entrar sozinho se a sessão cair. A senha fica criptografada na sua VPS e não volta para a tela.</div>
+                      <div className="conta-row">
+                        <input id={`conta-${sv}-email`} className="input" type="email" autoComplete="off" aria-label={`E-mail ${nome}`} placeholder="E-mail da conta" value={contaForm[sv].email} onChange={(e) => setContaForm({ ...contaForm, [sv]: { ...contaForm[sv], email: e.target.value } })} />
+                        <input className="input" type="password" autoComplete="new-password" aria-label={`Senha ${nome}`} placeholder={c.temSenha ? 'Senha salva (deixe vazio pra manter)' : 'Senha'} value={contaForm[sv].senha} onChange={(e) => setContaForm({ ...contaForm, [sv]: { ...contaForm[sv], senha: e.target.value } })} />
+                        <button className="btn sm" onClick={() => salvarConta(sv)}>Salvar</button>
+                      </div>
+                    </details>
                   </div>
-                  <a className="btn sm ghost tela-login" href={TELA} target="_blank" rel="noreferrer" onClick={() => api('/robo/abrir', { method: 'POST', body: { site: sv } }).catch(() => {})}>
-                    Ou entre pela tela do robô (Google, código de verificação…) {Icon.out(14)}
-                  </a>
-                </div>
-              ))}
+                );
+              })}
               <div className="switch" style={{ marginTop: 8 }}>
                 <span>Tela do robô<br /><span className="muted small">Pra fazer login no LinkedIn e na Gupy uma vez, ou resolver um CAPTCHA</span></span>
                 <a className="btn sm" href={TELA} target="_blank" rel="noreferrer">Abrir</a>
@@ -261,6 +282,48 @@ export default function Perfil({ onChange }) {
           )}
         </div>
       </main>
+      {conectando && <ConectarModal site={conectando} onClose={() => { setConectando(null); reloadContas(); }} />}
+    </>
+  );
+}
+
+/* Janela "Conectar": mostra o navegador do robô já na página de login e fecha sozinha quando a conta conecta */
+function ConectarModal({ site, onClose }) {
+  const nome = site === 'linkedin' ? 'LinkedIn' : 'Gupy';
+  const [tela, setTela] = useState(null);
+  const [status, setStatus] = useState({});
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    api('/robo/conectar', { method: 'POST', body: { site } }).then((r) => setTela(r.tela)).catch((e) => toast(e.message));
+    const h = setInterval(async () => {
+      try {
+        const c = await api('/robo/contas');
+        setStatus({ aplicando: c.roboAplicando, semContato: c[site].conectado == null });
+        if (c[site].conectado) { setOk(true); clearInterval(h); setTimeout(onClose, 1800); }
+      } catch { /* tenta de novo */ }
+    }, 3000);
+    return () => clearInterval(h);
+  }, [site]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <>
+      <div className="sheet-bg" onClick={onClose} />
+      <section className="sheet conectar" role="dialog" aria-modal="true" aria-label={`Conectar ${nome}`}>
+        <header>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ fontSize: 18 }}>{ok ? `${nome} conectado` : `Conectar ${nome}`}</h2>
+            <div className="muted small">
+              {ok ? 'Pronto! O robô já pode aplicar com a sua conta.'
+                : status.semContato ? 'O robô não está respondendo agora. Confira se ele está ligado.'
+                : status.aplicando ? 'O robô está terminando uma candidatura; a página de login abre logo em seguida.'
+                : 'Entre na sua conta como preferir, inclusive "Continuar com Google". Esta janela fecha sozinha quando conectar.'}
+            </div>
+          </div>
+          <button className="icon-btn" onClick={onClose} aria-label="Fechar">{Icon.x(18)}</button>
+        </header>
+        <div className="tela-wrap">
+          {ok ? <div className="empty"><h2>Conectado ✓</h2></div> : tela ? <iframe title={`Login ${nome} no navegador do robô`} src={tela} allow="clipboard-read; clipboard-write" /> : <div className="empty"><span className="spin" /></div>}
+        </div>
+      </section>
     </>
   );
 }

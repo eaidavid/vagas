@@ -232,3 +232,15 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.02em; margin: 0; }
 @media (max-width: 520px) { .conta-row { grid-template-columns: 1fr; } }
 
 .tela-login { margin-top: 6px; padding-left: 0; }
+
+.conta { border-top: 1px solid var(--line); padding: 12px 0 4px; margin-top: 10px; }
+.conta-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.conta-head b { font-family: var(--display); font-size: 15px; }
+.conta-senha { margin-top: 8px; }
+.conta-senha summary { cursor: pointer; color: var(--muted); font-size: 13px; display: flex; gap: 8px; align-items: center; }
+.sheet.conectar { max-height: 96vh; height: 96vh; }
+@media (min-width: 900px) { .sheet.conectar { width: min(1100px, 92vw); height: 100%; } }
+.tela-wrap { flex: 1; min-height: 0; background: #000; display: flex; }
+.tela-wrap iframe { flex: 1; width: 100%; height: 100%; border: 0; }
+.tela-wrap .empty { margin: auto; }
+@media (max-width: 520px) { .conta-head .btn { flex-basis: 100%; margin-top: 4px; } .conta-head > span[style] { display: none; } }

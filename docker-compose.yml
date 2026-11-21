@@ -10,6 +10,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ROBO_TOKEN: ${ROBO_TOKEN}
       MCP_TOKEN: ${MCP_TOKEN}
+      VNC_PASSWORD: ${VNC_PASSWORD}   # para o botão Conectar abrir a tela do robô sem pedir senha
       COLLECT_EVERY_HOURS: ${COLLECT_EVERY_HOURS:-6}
       DATA_DIR: /data
     volumes:
