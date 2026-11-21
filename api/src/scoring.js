@@ -10,12 +10,12 @@ export const norm = (s = '') =>
 const has = (text, re) => re.test(text);
 
 const AREA = /\b(desenvolvedor|desenvolvedora|developer|dev|programador|programadora|front[\s-]?end|frontend|full[\s-]?stack|fullstack|react|javascript|typescript|node|software engineer|software developer|engenheir[oa] de software|desenvolvimento de software|analista de desenvolvimento|analista desenvolvedor|web developer|desenvolvimento web|ui engineer|ui developer)\b/;
-const LEVEL_UP = /\b(senior|sr\.?|pleno|pl\.?|especialista|lead|lider|tech lead|staff|principal|gerente|coordenador|coordenadora|head|arquitet[oa]|iii|ii)\b/;
+const LEVEL_UP = /\b(senior|sr\.?|pleno|pl\.?|mid[\s-]?level|mid|intermediate|especialista|specialist|lead|lider|tech lead|staff|principal|gerente|manager|coordenador|coordenadora|head|arquitet[oa]|architect|iii|ii)\b/;
 const LEVEL_OK = /\b(junior|jr\.?|estagio|estagiari[oa]|trainee|aprendiz|iniciante|entry|intern|internship|primeiro emprego)\b/;
 const INTERN = /\b(estagio|estagiari[oa]|intern|internship)\b/;
 const OTHER_AREA = /\b(vendas|vendedor|comercial|suporte|help ?desk|motorista|atendente|financeiro|contabil|marketing|analytics|seo|growth|trafego|social media|recepcionista|auxiliar administrativo|enfermeir|professor|analista de dados|cientista de dados|qa manual)\b/;
 // Linguagens fora do currículo: se aparecem no TÍTULO, a vaga é de outra stack
-const OTHER_STACK = /\b(java|\.net|dotnet|c#|php|python|golang|go lang|ruby|advpl|protheus|delphi|cobol|abap|sap|kotlin|swift|flutter|android|ios|salesforce|genexus|oracle|power ?bi|dados|data)\b/;
+const OTHER_STACK = /(?:^|[^a-z0-9])(java|\.net|dotnet|c#|php|python|golang|ruby|advpl|protheus|delphi|cobol|abap|sap|kotlin|swift|flutter|android|ios|salesforce|genexus|oracle|power ?bi|dados|data)(?![a-z0-9#])/;
 
 const BRAZIL = /\b(brasil|brazil|latam|latin america|america latina|sao paulo|rio de janeiro|goias|goiania|aparecida|minas gerais|parana|santa catarina|rio grande|bahia|pernambuco|ceara|distrito federal|brasilia|curitiba|belo horizonte|porto alegre|recife|fortaleza|salvador|florianopolis|campinas|manaus|belem|vitoria|natal|joao pessoa|maceio|teresina|cuiaba|campo grande|uberlandia|ribeirao preto|sp|rj|mg|go|pr|sc|rs|ba|pe|ce|df|es|mt|ms|am|pa)\b/;
 const GLOBAL = /\b(anywhere|worldwide|global|americas|remoto|remote|home office)$|^(remoto|remote|home office|hibrido|presencial)$/;
@@ -80,7 +80,7 @@ export function scoreJob(job, prefs) {
   else minus(20, 'Título não parece de desenvolvimento');
 
   const otherStack = title.match(OTHER_STACK);
-  if (otherStack) minus(18, `Stack principal fora do seu currículo (${otherStack[0]})`);
+  if (otherStack) minus(18, `Stack principal fora do seu currículo (${otherStack[1]})`);
 
   // Nível
   if (has(title, LEVEL_UP) && !has(title, LEVEL_OK)) { minus(35, 'Pede nível acima de júnior'); block = block || 'nivel'; }

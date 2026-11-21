@@ -79,3 +79,12 @@ test('Nota: "web" sozinho não faz a vaga ser de desenvolvimento', () => {
   assert.equal(wa.block, 'area');
   assert.equal(wd.block, null);
 });
+
+test('Nota: mid-level conta como pleno e .NET/Java no título como outra stack', () => {
+  const mid = scoreJob({ title: 'Full Stack Engineer (Mid-level)', location: 'Brasil', workplace: 'remoto', description: '' }, prefs);
+  const net = scoreJob({ title: 'Full Stack .NET Engineer', location: 'Brasil', workplace: 'remoto', description: '' }, prefs);
+  const js = scoreJob({ title: 'Desenvolvedor JavaScript Júnior', location: 'Brasil', workplace: 'remoto', description: '' }, prefs);
+  assert.equal(mid.block, 'nivel');
+  assert.ok(net.reasons.some((r) => /\.net/.test(r.text)));
+  assert.ok(!js.reasons.some((r) => /Stack principal/.test(r.text)));
+});

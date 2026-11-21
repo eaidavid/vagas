@@ -130,7 +130,7 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.02em; margin: 0; }
 .reel.behind { transform: scale(0.95) translateY(10px); opacity: 0.5; pointer-events: none; }
 .reel .head { padding: 18px 18px 14px; }
 .reel .company { display: flex; align-items: center; gap: 10px; color: var(--muted); font-weight: 600; font-size: 14px; }
-.reel .logo { width: 34px; height: 34px; border-radius: 10px; background: var(--card-2); object-fit: cover; flex: none; display: grid; place-items: center; font-weight: 800; color: var(--text); }
+.logo { width: 34px; height: 34px; border-radius: 10px; background: var(--card-2); object-fit: cover; flex: none; display: grid; place-items: center; font-weight: 800; color: var(--text); }
 .reel h2 { font-size: 25px; font-weight: 800; line-height: 1.15; margin: 12px 0 10px; }
 .reel .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .reel .scroll { user-select: text; -webkit-user-select: text; flex: 1; overflow: auto; padding: 0 18px 18px; overscroll-behavior: contain; }
