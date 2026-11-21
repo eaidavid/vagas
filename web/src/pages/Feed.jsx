@@ -31,7 +31,13 @@ export default function Feed({ stats, onChange, go }) {
   }, [load, text]);
 
   useEffect(() => { setCollecting(!!stats?.collecting); }, [stats?.collecting]);
-  useEffect(() => { if (!collecting) load(); }, [collecting]); // recarrega quando a busca termina
+  // Durante a busca as vagas vão chegando: recarrega junto com os números (a cada 15 s) e quando termina
+  useEffect(() => { if (collecting) load(); }, [stats]); // eslint-disable-line react-hooks/exhaustive-deps
+  const wasCollecting = useRef(false);
+  useEffect(() => {
+    if (wasCollecting.current && !collecting) load();
+    wasCollecting.current = collecting;
+  }, [collecting, load]);
 
   const move = async (ids, status, label) => {
     const before = view;

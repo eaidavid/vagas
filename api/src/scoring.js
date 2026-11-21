@@ -17,6 +17,10 @@ const OTHER_AREA = /\b(vendas|vendedor|comercial|suporte n[1-3]|help ?desk|motor
 // Linguagens fora do currículo: se aparecem no TÍTULO, a vaga é de outra stack
 const OTHER_STACK = /\b(java|\.net|dotnet|c#|php|python|golang|go lang|ruby|advpl|protheus|delphi|cobol|abap|sap|kotlin|swift|flutter|android|ios|salesforce|genexus|oracle|power ?bi|dados|data)\b/;
 
+const BRAZIL = /\b(brasil|brazil|latam|latin america|america latina|sao paulo|rio de janeiro|goias|goiania|aparecida|minas gerais|parana|santa catarina|rio grande|bahia|pernambuco|ceara|distrito federal|brasilia|curitiba|belo horizonte|porto alegre|recife|fortaleza|salvador|florianopolis|campinas|manaus|belem|vitoria|natal|joao pessoa|maceio|teresina|cuiaba|campo grande|uberlandia|ribeirao preto|sp|rj|mg|go|pr|sc|rs|ba|pe|ce|df|es|mt|ms|am|pa)\b/;
+const GLOBAL = /\b(anywhere|worldwide|global|americas|remoto|remote|home office)$|^(remoto|remote|home office|hibrido|presencial)$/;
+const ENGLISH = /\b(fluent english|english fluency|advanced english|ingles fluente|ingles avancado|fluencia em ingles|ingles (nivel )?(avancado|fluente))\b/;
+
 const SKILLS = [
   ['HTML', /\bhtml5?\b/],
   ['CSS', /\bcss3?\b/],
@@ -96,6 +100,11 @@ export function scoreJob(job, prefs) {
     else { minus(40, `${wp === 'hibrido' ? 'Híbrido' : 'Presencial'} fora da sua região`); block = block || 'local'; }
   } else if (nearby) plus(8, 'Na sua região');
   else if (has(norm(job.location), /remot|home ?office|anywhere|brasil$/)) plus(6, 'Parece remoto');
+
+  // Fora do Brasil (comum nos quadros Greenhouse/Lever: "Remote, United States")
+  const locN = norm(job.location);
+  if (locN && !BRAZIL.test(locN) && !GLOBAL.test(locN)) { minus(30, 'Vaga de fora do Brasil'); block = block || 'local'; }
+  if (ENGLISH.test(desc)) minus(15, 'Pede inglês avançado/fluente');
 
   // Salário
   const sal = job.salary || parseSalary(job.salaryText);

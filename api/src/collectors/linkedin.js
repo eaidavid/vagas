@@ -5,6 +5,8 @@ import { fetchText, jitter } from './http.js';
 
 const SEARCH = 'https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search';
 const DETAIL = 'https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/';
+// Sem o geoId, "Brasil" sozinho traz vagas dos EUA
+const BRAZIL_GEO = '106057199';
 
 const clean = (s) => (s || '').replace(/\s+/g, ' ').trim();
 
@@ -73,7 +75,7 @@ export async function collectLinkedin({ termos, cidades }, { prefilter, known, l
   const searches = [];
   for (const termo of termos) {
     // Remoto no Brasil (f_WT=2), nível estágio/júnior (f_E=1,2), última semana
-    searches.push({ termo, params: { keywords: termo, location: 'Brasil', f_WT: '2', f_E: '1,2', f_TPR: 'r604800' }, remote: true });
+    searches.push({ termo, params: { keywords: termo, location: 'Brasil', geoId: BRAZIL_GEO, f_WT: '2', f_E: '1,2', f_TPR: 'r604800' }, remote: true });
     // Região de Goiânia (qualquer formato, filtrado depois pela nota)
     searches.push({ termo, params: { keywords: termo, location: cidades[0] ? `${cidades[0]}, Goiás, Brasil` : 'Goiânia, Goiás, Brasil', distance: '25', f_E: '1,2', f_TPR: 'r604800' }, remote: false });
   }

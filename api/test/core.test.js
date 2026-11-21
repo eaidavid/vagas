@@ -40,6 +40,17 @@ test('Nota: júnior remoto de React sobe; sênior e presencial fora caem', () =>
   assert.ok(good.score > near.score && near.score > far.score);
 });
 
+test('Nota: remoto de fora do Brasil e inglês fluente caem', () => {
+  const us = scoreJob({ title: 'Junior Frontend Developer', location: 'Remote, United States', workplace: 'remoto', description: 'React' }, prefs);
+  const br = scoreJob({ title: 'Junior Frontend Developer', location: 'São Paulo, SP', workplace: 'remoto', description: 'React' }, prefs);
+  const en = scoreJob({ title: 'Desenvolvedor Júnior', location: 'Brasil', workplace: 'remoto', description: 'Requisitos: inglês fluente, React' }, prefs);
+  const bare = scoreJob({ title: 'Desenvolvedor Júnior', location: 'Remoto', workplace: 'remoto', description: '' }, prefs);
+  assert.equal(us.block, 'local');
+  assert.equal(br.block, null);
+  assert.equal(bare.block, null);
+  assert.ok(en.reasons.some((r) => /inglês/.test(r.text)));
+});
+
 test('Salário: entende formatos comuns', () => {
   assert.deepEqual(parseSalary('R$ 2.500,00 - R$ 3.200,00'), { min: 2500, max: 3200 });
   assert.deepEqual(parseSalary('R$3k a 4k'), { min: 3000, max: 4000 });

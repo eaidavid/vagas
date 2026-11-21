@@ -52,7 +52,10 @@ export async function collectGupy({ termos }, { log, emit }) {
           if (host === HOSTS.at(-1) || base) log(`Gupy: busca "${termo}" falhou (${e.message})`);
         }
       }
-      if (!data) return jobs;
+      if (!data) {
+        if (!base) throw new Error('a API da Gupy não respondeu (o endereço pode ter mudado)');
+        return jobs;
+      }
       const list = data.data || [];
       for (const j of list) {
         if (seen.has(j.id)) continue;
