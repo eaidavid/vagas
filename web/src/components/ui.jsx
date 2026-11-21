@@ -54,6 +54,27 @@ export function Logo({ job, size }) {
   return <div className="logo">{(job.company || '?').trim()[0]?.toUpperCase()}</div>;
 }
 
+export function ClaudeBox({ claude }) {
+  if (!claude?.resumo) return null;
+  return (
+    <div className="claude-box">
+      <div className="claude-head"><b>Análise do Claude</b>{claude.nota != null && <span className="tag">{claude.nota}/100</span>}</div>
+      <p>{claude.resumo}</p>
+      {claude.pontosFortes?.length > 0 && <div className="why">{claude.pontosFortes.map((t, i) => <div key={i} className="p">{t}</div>)}</div>}
+      {claude.riscos?.length > 0 && <div className="why">{claude.riscos.map((t, i) => <div key={i} className="m">{t}</div>)}</div>}
+    </div>
+  );
+}
+
+export async function askClaude(api, body, okText) {
+  try {
+    const r = await api('/pedidos', { method: 'POST', body });
+    toast(r.jaExistia ? 'Esse pedido já está na fila do Claude' : okText || 'Pedido enviado. No chat do Claude, diga: Faz os pedidos do Vagas');
+  } catch (e) {
+    toast(e.message);
+  }
+}
+
 let toastSet = null;
 export function toast(text, undo) { toastSet?.({ text, undo, id: Math.random() }); }
 export function Toaster() {

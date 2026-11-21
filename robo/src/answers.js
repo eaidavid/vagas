@@ -33,6 +33,7 @@ function splitName(full = '') {
 }
 
 export function coverLetter(profile, job) {
+  if (job.claude?.carta) return job.claude.carta;
   return [
     `Olá! Tenho interesse na vaga de ${job.title}${job.company ? ` na ${job.company}` : ''}.`,
     profile.resumo,
@@ -60,6 +61,9 @@ export function answerFor(field, profile, job) {
   }
   if (EEO.test(label)) return { decline: true };
 
+  // Respostas que o Claude preparou para ESTA vaga vêm antes de tudo
+  const perJob = fromBank(field.label, job.claude?.respostas);
+  if (perJob) return { value: perJob };
   // O banco de respostas vem primeiro para perguntas (você pode sobrescrever qualquer coisa por ele)
   const bank = fromBank(field.label, profile.respostas);
   if (bank && field.label.length > 25) return { value: bank };

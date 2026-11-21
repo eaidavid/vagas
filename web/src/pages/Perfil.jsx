@@ -12,6 +12,7 @@ export default function Perfil({ onChange }) {
   const [saving, setSaving] = useState(false);
   const [collect, setCollect] = useState(null);
   const [robo, setRobo] = useState(null);
+  const [pedidos, setPedidos] = useState([]);
 
   useEffect(() => { api('/profile').then(setP); api('/robo/config').then(setRobo).catch(() => {}); }, []);
   const setRoboCfg = async (patch) => {
@@ -20,7 +21,7 @@ export default function Perfil({ onChange }) {
     try { setRobo(await api('/robo/config', { method: 'PUT', body: next })); } catch (e) { toast(e.message); }
   };
   useEffect(() => {
-    const load = () => api('/collect').then(setCollect).catch(() => {});
+    const load = () => { api('/collect').then(setCollect).catch(() => {}); api('/pedidos').then(setPedidos).catch(() => {}); };
     load();
     const h = setInterval(load, 8000);
     return () => clearInterval(h);
@@ -95,6 +96,20 @@ export default function Perfil({ onChange }) {
                 <div className="log">{collect.activity.slice(-30).map((a, i) => <div key={i}>{new Date(a.at).toLocaleTimeString('pt-BR')} · {a.text}</div>)}</div>
               </details>
             )}
+          </section>
+
+          <section className="panel">
+            <h2>Claude</h2>
+            <div className="muted small" style={{ margin: '6px 0 4px' }}>
+              Conectado pelo conector personalizado no claude.ai (o link aparece no fim da instalação). Use <b>Pedir ao Claude</b> nas vagas e na Fila; depois, no chat do Claude, diga <b>Faz os pedidos do Vagas</b>.
+            </div>
+            {pedidos.length === 0 && <div className="switch"><span className="muted small">Nenhum pedido recente.</span></div>}
+            {pedidos.map((r) => (
+              <div key={r.id} className="switch">
+                <span className="small">{{ analisar: 'Analisar', preparar: 'Preparar carta e respostas', responder: 'Responder perguntas' }[r.tipo]}{r.titulo ? ` · ${r.titulo}` : ''}</span>
+                <span className="small" style={{ color: r.status === 'pendente' ? 'var(--warn)' : 'var(--good)', textAlign: 'right' }}>{r.status === 'pendente' ? 'esperando o Claude' : r.resultado || 'feito'}</span>
+              </div>
+            ))}
           </section>
 
           {robo && (

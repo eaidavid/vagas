@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
-import { Icon, JobTags, Logo, Reasons, Score, toast } from '../components/ui.jsx';
+import { ClaudeBox, Icon, JobTags, Logo, Reasons, Score, toast } from '../components/ui.jsx';
 
 const THRESHOLD = 110;
 
@@ -161,6 +161,7 @@ function ReelCard({ job, behind, style, yes = 0, no = 0, handlers = {} }) {
           <div className="fit-top"><Score v={job.score} /><b>Por que combina com você</b></div>
           <Reasons reasons={job.reasons} />
         </div>
+        <ClaudeBox claude={job.claude} />
         <div className="desc">{job.description || 'Descrição não disponível.'}</div>
         <div style={{ marginTop: 14 }}>
           <a className="btn sm" href={job.applyUrl || job.url} target="_blank" rel="noreferrer">Ver no site {Icon.out(14)}</a>

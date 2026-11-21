@@ -36,3 +36,10 @@ test('escolhe a opção certa', () => {
   assert.equal(pickOption('Brasil', ['Argentina', 'Brasil', 'Chile']), 1);
   assert.equal(pickOption('Prefiro não', ['A', 'B']), -1);
 });
+
+test('carta e respostas que o Claude preparou para a vaga têm prioridade', () => {
+  const jobComClaude = { ...job, claude: { carta: 'Carta feita pelo Claude', respostas: [{ pergunta: 'Pretensão salarial', resposta: 'R$ 3.000 (específica desta vaga)' }] } };
+  assert.equal(answerFor({ label: 'Qual a sua pretensão salarial?', kind: 'text' }, profile, jobComClaude).value, 'R$ 3.000 (específica desta vaga)');
+  assert.equal(answerFor({ label: 'Why do you want to work here? Cover letter', kind: 'textarea' }, profile, jobComClaude).value, 'Carta feita pelo Claude');
+  assert.equal(answerFor({ label: 'Qual a sua pretensão salarial?', kind: 'text' }, profile, job).value, 'R$ 2.500');
+});

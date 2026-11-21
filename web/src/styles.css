@@ -201,3 +201,8 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.02em; margin: 0; }
 .filled b { color: var(--text); font-size: 12.5px; }
 .filled span { color: var(--faint); }
 .select { appearance: auto; }
+
+.claude-box { background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; }
+.claude-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.claude-head b { font-family: var(--display); font-size: 15px; }
+.claude-box p { margin: 0 0 6px; font-size: 14px; color: #cfd5de; }

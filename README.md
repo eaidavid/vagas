@@ -52,6 +52,17 @@ validados na VPS com as suas contas.
 
 API do robô (token `ROBO_TOKEN`): `POST /api/public/robo/proxima` e `POST /api/public/robo/:id/resultado`.
 
+### Claude (conector, como no Radar)
+O Vagas tem um servidor MCP em `/mcp/<MCP_TOKEN>`. No claude.ai: Configurações → Conectores → Adicionar conector
+personalizado, com o link que o instalador mostra. Não precisa de chave de API.
+
+- **Pedir ao Claude** (detalhe da vaga e Fila) deixa um pedido na fila; no chat, diga **"Faz os pedidos do Vagas"**.
+- O que o Claude faz: analisa vagas contra o currículo (a análise aparece no app), tria por você, escreve carta e
+  respostas específicas da vaga (o robô usa antes do banco geral) e responde as perguntas que travaram a Fila.
+- Ferramentas: `ver_perfil`, `buscar_vagas`, `ver_vaga`, `avaliar_vaga`, `mover_vagas`, `marcar_minha`,
+  `preparar_candidatura`, `ver_travadas`, `responder_perguntas`, `salvar_respostas_padrao`, `ver_pedidos`, `concluir_pedido`.
+- Regra fixa nas instruções: nunca inventar experiência, empresa, certificação ou nível de inglês.
+
 ## Instalar na VPS (Coolify)
 1. DNS: registro A `vagas` apontando para o IP da VPS.
 2. No servidor, como root:
@@ -59,7 +70,7 @@ API do robô (token `ROBO_TOKEN`): `POST /api/public/robo/proxima` e `POST /api/
    curl -fsSL https://raw.githubusercontent.com/eaidavid/vagas/main/deploy/install.sh | bash
    ```
    Repositório privado: `GH_TOKEN=<token só de leitura> bash install.sh`.
-3. O instalador mostra o link, o e-mail, a senha do painel e a senha da tela do robô. Rodar de novo atualiza sem perder nada.
+3. O instalador mostra o link, o e-mail, a senha do painel, a senha da tela do robô e o link do conector do Claude. Rodar de novo atualiza sem perder nada.
    A atualização automática confere a branch `main` a cada 5 minutos.
 
 ## Rodar localmente

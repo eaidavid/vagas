@@ -15,6 +15,7 @@ let apps = [];
 let appSeq = 1;
 let triagePos = 0;
 let collecting = false;
+const pedidos = [];
 let lastCollect = { at: new Date(Date.now() - 2 * 3600000).toISOString(), summary: {} };
 const activity = [];
 const runs = [
@@ -124,6 +125,18 @@ export async function demoApi(path, { method = 'GET', body } = {}) {
     return ok();
   }
 
+  if (p === '/pedidos' && method === 'GET') return pedidos;
+  if (p === '/pedidos') {
+    const j = jobs.find((x) => x.id === body.jobId);
+    const r = { id: pedidos.length + 1, tipo: body.tipo, jobId: body.jobId, titulo: j?.title, status: 'pendente', createdAt: now() };
+    pedidos.unshift(r);
+    // Na demonstração o "Claude" responde sozinho depois de alguns segundos
+    setTimeout(() => {
+      r.status = 'feito'; r.resultado = 'Feito (simulado)';
+      if (j && body.tipo === 'analisar') j.claude = { nota: Math.min(95, j.score), resumo: 'Simulação: aqui aparece a análise que o Claude escreve pelo conector, com o encaixe da vaga no seu currículo.', pontosFortes: j.skills.slice(0, 3).map((s) => `Pede ${s}, que você já usa`), riscos: [] };
+    }, 4000);
+    return { ok: true, id: r.id };
+  }
   if (p === '/profile' && method === 'GET') return clone(profile);
   if (p === '/profile' && method === 'PUT') { const { temCurriculo, ...rest } = body; profile = { ...rest, temCurriculo: true }; return ok({ ok: true, rescored: jobs.length }); }
   if (p === '/profile/curriculo') return ok();

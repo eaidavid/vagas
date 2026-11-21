@@ -40,6 +40,7 @@ const summary = (r) => ({
   block: r.data.block || null,
   skills: r.data.skills || [],
   fontes: r.data.fontes || [],
+  claude: r.data.claude ? { nota: r.data.claude.nota ?? null, resumo: r.data.claude.resumo || null, pontosFortes: r.data.claude.pontosFortes || [], riscos: r.data.claude.riscos || [], preparado: !!(r.data.claude.carta || r.data.claude.respostas?.length) } : null,
   createdAt: r.created_at,
 });
 const full = (r) => ({ ...summary(r), description: r.data.description || '' });
@@ -59,6 +60,7 @@ export function registerRoutes(app) {
       collecting: isRunning(),
       roboLastSeen: await kvGet('roboLastSeen'),
       robo: await roboConfig(),
+      pedidos: (await q("select count(*)::int n from requests where status = 'pendente'")).rows[0].n,
     };
   });
 
@@ -152,6 +154,20 @@ export function registerRoutes(app) {
     if (req.params.action === 'enviar') await q('update applications set enviar = true where id = $1', [id]);
     await setStatus(id, act[0], act[1]);
     return { ok: true };
+  });
+
+  /* Pedidos para o Claude (atendidos pelo conector: "Faz os pedidos do Vagas") */
+  app.get('/api/pedidos', async () => {
+    const { rows } = await q("select r.*, j.data->>'title' titulo from requests r left join jobs j on j.id = r.job_id where r.status = 'pendente' or r.done_at > now() - interval '3 days' order by r.id desc limit 50");
+    return rows.map((r) => ({ id: r.id, tipo: r.tipo, jobId: r.job_id, applicationId: r.application_id, titulo: r.titulo, status: r.status, resultado: r.resultado, createdAt: r.created_at, doneAt: r.done_at }));
+  });
+  app.post('/api/pedidos', async (req, reply) => {
+    const { tipo, jobId = null, applicationId = null, texto = null } = req.body || {};
+    if (!['analisar', 'preparar', 'responder'].includes(tipo)) return reply.code(400).send({ error: 'Pedido inválido.' });
+    const { rows: dup } = await q("select id from requests where status = 'pendente' and tipo = $1 and job_id is not distinct from $2 and application_id is not distinct from $3", [tipo, jobId, applicationId]);
+    if (dup[0]) return { ok: true, id: dup[0].id, jaExistia: true };
+    const { rows } = await q('insert into requests(tipo, job_id, application_id, texto) values ($1,$2,$3,$4) returning id', [tipo, jobId, applicationId, texto]);
+    return { ok: true, id: rows[0].id };
   });
 
   /* Robô: ajustes e prints */

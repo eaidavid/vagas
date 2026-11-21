@@ -8,6 +8,7 @@ import fstatic from '@fastify/static';
 import { migrate } from './db.js';
 import { ensureAdmin, guard, registerAuth } from './auth.js';
 import { registerRoutes } from './routes.js';
+import { registerMcp } from './mcp.js';
 import { startScheduler } from './collectors/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -18,12 +19,13 @@ await app.register(cookie);
 guard(app);
 registerAuth(app);
 registerRoutes(app);
+registerMcp(app);
 
 if (existsSync(DIST)) {
   await app.register(fstatic, { root: DIST, index: ['index.html'] });
   // Rotas do painel (SPA) caem no index.html
   app.setNotFoundHandler((req, reply) => {
-    if (req.url.startsWith('/api/')) return reply.code(404).send({ error: 'Não encontrado.' });
+    if (req.url.startsWith('/api/') || req.url.startsWith('/mcp')) return reply.code(404).send({ error: 'Não encontrado.' });
     return reply.sendFile('index.html');
   });
 } else {

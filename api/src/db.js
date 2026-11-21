@@ -59,6 +59,20 @@ create index if not exists applications_status_idx on applications(status, next_
 -- "Está certo, enviar": libera o envio desta candidatura mesmo com o modo ensaio ligado
 alter table applications add column if not exists enviar boolean not null default false;
 
+-- Pedidos para o Claude (botão "Pedir ao Claude"). tipo: analisar · preparar · responder
+create table if not exists requests (
+  id serial primary key,
+  tipo text not null,
+  job_id int references jobs(id) on delete cascade,
+  application_id int references applications(id) on delete cascade,
+  texto text,
+  status text not null default 'pendente',
+  resultado text,
+  created_at timestamptz not null default now(),
+  done_at timestamptz
+);
+create index if not exists requests_status_idx on requests(status);
+
 create table if not exists collector_runs (
   id serial primary key,
   source text not null,

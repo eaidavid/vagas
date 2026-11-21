@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ago, DEMO } from '../api.js';
-import { AtsTag, Icon, toast } from '../components/ui.jsx';
+import { AtsTag, Icon, toast, askClaude } from '../components/ui.jsx';
 
 const GROUPS = [
   { id: 'precisa_voce', title: 'Precisa de você' },
@@ -111,6 +111,7 @@ function AppCard({ a, act }) {
             </div>
           ))}
           <div className="row">
+            <button className="btn sm" onClick={() => askClaude(api, { tipo: 'responder', applicationId: a.id, jobId: j.id })}>Pedir ao Claude</button>
             <button className="btn primary sm" onClick={() => act(a, 'responder', { answers: lastQ.map((q, i) => ({ pergunta: q.pergunta, resposta: answers[i] || '' })) }, 'Respostas salvas. O robô tenta de novo.')}>
               Responder e continuar
             </button>
@@ -130,6 +131,9 @@ function AppCard({ a, act }) {
       )}
       <div className="row">
         <a className="btn sm" href={j.applyUrl || j.url} target="_blank" rel="noreferrer">Abrir vaga {Icon.out(14)}</a>
+        {a.status === 'aguardando' && !j.claude?.preparado && (
+          <button className="btn sm" onClick={() => askClaude(api, { tipo: 'preparar', jobId: j.id }, 'Pedido enviado: o Claude vai escrever a carta e as respostas desta vaga')}>Claude: preparar carta</button>
+        )}
         {['aguardando', 'precisa_voce', 'falhou'].includes(a.status) && (
           <button className="btn sm" onClick={() => act(a, 'apliquei-eu', null, 'Marcada como aplicada')}>{Icon.check(16)} Apliquei</button>
         )}

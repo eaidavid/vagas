@@ -39,6 +39,7 @@ ENV
   NEW_ENV=1
 fi
 # Instalações antigas: acrescenta a senha da tela do robô se ainda não existir
+grep -q '^MCP_TOKEN=' .env || echo "MCP_TOKEN=$(openssl rand -hex 24)" >> .env
 grep -q '^VNC_PASSWORD=' .env || echo "VNC_PASSWORD=$(openssl rand -base64 12 | tr -d '/+=' | cut -c1-8)" >> .env
 
 say "Ligando ao proxy do Coolify (HTTPS automático)"
@@ -110,5 +111,10 @@ else
 fi
 echo "Tela do robô: https://$DOMAIN/tela/vnc.html?path=tela/websockify&autoconnect=1&resize=scale"
 echo "Senha da tela: $VNC_PASSWORD   (também em $DIR/.env)"
+echo
+echo "Conector do Claude (claude.ai → Configurações → Conectores → Adicionar conector personalizado):"
+echo "           https://$DOMAIN/mcp/$MCP_TOKEN"
+echo "Esse link é uma senha: não compartilhe."
+echo
 echo "O robô começa em MODO ENSAIO: preenche e não envia. Desligue em Perfil → Robô."
 echo "Se o HTTPS não abrir logo, espere o DNS de '$DOMAIN' propagar; o certificado sai sozinho."
