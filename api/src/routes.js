@@ -195,6 +195,20 @@ export function registerRoutes(app) {
     await kvSet('roboConfig', next);
     return next;
   });
+  /* Abre a página de login no navegador do robô, para você entrar pela tela (ex.: Continuar com Google) */
+  const LOGIN_PAGES = { linkedin: 'https://www.linkedin.com/login', gupy: 'https://portal.gupy.io/', google: 'https://accounts.google.com/' };
+  app.post('/api/robo/abrir', async (req, reply) => {
+    const url = LOGIN_PAGES[req.body?.site];
+    if (!url) return reply.code(400).send({ error: 'Site inválido.' });
+    await kvSet('roboComando', { abrir: url, at: new Date().toISOString() });
+    return { ok: true };
+  });
+  app.get('/api/public/robo/comando', async (req, reply) => {
+    if (!robo(req, reply)) return;
+    const cmd = await kvGet('roboComando');
+    if (cmd) await q("delete from kv where key = 'roboComando'");
+    return cmd || {};
+  });
   app.get('/api/robo/contas', async () => contasPublicas());
   app.put('/api/robo/contas/:servico', async (req, reply) => {
     if (!SERVICOS.includes(req.params.servico)) return reply.code(400).send({ error: 'Serviço inválido.' });

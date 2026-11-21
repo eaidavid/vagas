@@ -210,6 +210,29 @@ export async function fillForm(page, { profile, job, resumePath, scope = null })
 export const SUBMIT = /^(submit|send|enviar|apply|candidatar|finalizar|concluir)|submit application|enviar candidatura|send application|apply now|candidatar-se|finalizar candidatura/i;
 export const NEXT = /^(next|avançar|avancar|continuar|continue|próximo|proximo|prosseguir|review|revisar)\b/i;
 
+/* Fecha o que estiver na frente: janelas de login/cadastro, avisos de cookies, pop-ups */
+export async function dismissOverlays(page) {
+  await page.keyboard.press('Escape').catch(() => {});
+  const closers = page.locator([
+    'button[aria-label="Dismiss"]', 'button[aria-label="Fechar"]', 'button[aria-label="Close"]', '.modal__dismiss', '.contextual-sign-in-modal__modal-dismiss',
+    '#onetrust-accept-btn-handler', 'button[id*="cookie" i]', '[class*="cookie" i] button',
+  ].join(', ')).filter({ visible: true });
+  const n = Math.min(await closers.count(), 3);
+  for (let i = 0; i < n; i++) await closers.nth(0).click({ timeout: 2000 }).catch(() => {});
+  const accept = page.locator('button').filter({ visible: true, hasText: /^(aceitar|aceito|accept( all)?|concordo|entendi|ok|permitir todos)$/i }).first();
+  if (await accept.count()) await accept.click({ timeout: 2000 }).catch(() => {});
+  await page.waitForTimeout(500);
+}
+
+/* Clique que não trava: se algo estiver na frente, fecha e tenta de novo; por último clica direto no elemento */
+export async function safeClick(page, locator) {
+  try { await locator.click({ timeout: 8000 }); return; } catch { /* algo na frente */ }
+  await dismissOverlays(page);
+  try { await locator.click({ timeout: 8000 }); return; } catch { /* ainda bloqueado */ }
+  await locator.scrollIntoViewIfNeeded({ timeout: 3000 }).catch(() => {});
+  await locator.evaluate((el) => el.click(), null, { timeout: 5000 });
+}
+
 export async function findButton(page, re, scope = null, exclude = null) {
   const root = scope ? page.locator(scope) : page;
   const btns = root.locator('button:visible, input[type=submit]:visible, a[role=button]:visible');

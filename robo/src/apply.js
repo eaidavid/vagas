@@ -1,7 +1,7 @@
 // Uma candidatura do começo ao fim: abre a vaga, faz login se precisar, entra no formulário
 // (direto, modal do LinkedIn, etapas da Gupy ou site externo), preenche etapa por etapa e envia.
 // Em modo ensaio, para antes de enviar.
-import { fillForm, findButton, hasCaptcha, successText, formErrors, SUBMIT, NEXT } from './fill.js';
+import { fillForm, findButton, hasCaptcha, successText, formErrors, safeClick, SUBMIT, NEXT } from './fill.js';
 import { linkedinGuest, loginLinkedin, gupyNeedsLogin, loginGupy, LI_SIGNIN_MODAL } from './login.js';
 
 const NEXT_RE = new RegExp(`${NEXT.source}|salvar e (continuar|avan[cç]ar)|ir para (a )?pr[oó]xima`, 'i');
@@ -22,6 +22,16 @@ export function hostAts(url) {
   if (/greenhouse\.io$/.test(h)) return 'greenhouse';
   if (/linkedin\.com$/.test(h)) return 'linkedin';
   return 'site';
+}
+
+/* Erros técnicos do navegador em português */
+function friendlyError(e) {
+  const m = String(e?.message || e).split('\n')[0];
+  if (/Timeout .*exceeded/i.test(m) && /click/i.test(m)) return 'Uma tela na frente travou o clique (pedido de login, aviso de cookies ou pop-up). Veja o print; se for login, salve a conta em Perfil → Robô ou entre pela tela do robô.';
+  if (/Timeout .*exceeded/i.test(m)) return 'O site demorou demais para responder. O robô tenta de novo mais tarde.';
+  if (/ERR_NAME_NOT_RESOLVED|ERR_CONNECTION|ERR_TUNNEL|net::/i.test(m)) return 'Não foi possível abrir o site da vaga (conexão recusada ou site fora do ar). O robô tenta de novo mais tarde.';
+  if (/Target (page|closed)|has been closed/i.test(m)) return 'A página fechou no meio da candidatura. O robô tenta de novo mais tarde.';
+  return m.slice(0, 300);
 }
 
 const shot = async (page) => (await page.screenshot({ type: 'jpeg', quality: 60, fullPage: false }).catch(() => null))?.toString('base64') || null;
@@ -95,7 +105,7 @@ export async function applyJob(context, { job, profile, resumePath, ensaio, cont
           log(`clicando "${entryLabel}"`);
           await progress(30, `Clicando em "${entryLabel.slice(0, 40)}"`);
           const popup = context.waitForEvent('page', { timeout: 8000 }).catch(() => null);
-          await entry.click();
+          await safeClick(page, entry);
           const newPage = await popup;
           if (newPage) {
             await newPage.waitForLoadState('domcontentloaded').catch(() => {});
@@ -124,7 +134,7 @@ export async function applyJob(context, { job, profile, resumePath, ensaio, cont
           if (ats === 'gupy' || ats === 'site') {
             const again = await findButton(page, ENTRY[ats] || ENTRY.generic);
             if (again && !(await hasForm())) {
-              await again.click();
+              await safeClick(page, again);
               await page.waitForTimeout(3500);
               if (ats === 'gupy') { const stop = await ensureGupy(); if (stop) return await stop; }
             }
@@ -156,7 +166,7 @@ export async function applyJob(context, { job, profile, resumePath, ensaio, cont
         if (ensaio) return await done('precisa_voce', 'Ensaio: formulário preenchido, não enviado', { error: 'Modo ensaio: o robô preencheu tudo e parou antes de enviar. Confira o print e toque em "Está certo, enviar". Para enviar todas direto, desligue o ensaio em Perfil → Robô.' });
         log('enviando');
         await progress(92, 'Enviando a candidatura');
-        await submit.click();
+        await safeClick(page, submit);
         for (let i = 0; i < 15; i++) {
           await page.waitForTimeout(1000);
           if (await successText(page)) return await done('aplicada', 'Candidatura enviada');
@@ -170,7 +180,7 @@ export async function applyJob(context, { job, profile, resumePath, ensaio, cont
       }
       if (!next) return await done('precisa_voce', 'Não achei o botão de enviar', { error: 'O robô preencheu o que conseguiu, mas não achou como avançar. Veja o print.' });
       await progress(Math.min(50 + step * 10, 88), `Indo para a etapa ${step + 1}`);
-      await next.click();
+      await safeClick(page, next);
       await page.waitForTimeout(2500);
       const errs = (await formErrors(page)).join(' · ');
       if (errs && errs === lastErrors) return await done('precisa_voce', 'Travou numa etapa', { error: `O site não deixou avançar: ${errs}` });
@@ -178,7 +188,7 @@ export async function applyJob(context, { job, profile, resumePath, ensaio, cont
     }
     return await done('precisa_voce', 'Formulário longo demais', { error: 'Passou de 12 etapas; termine você mesmo.' });
   } catch (e) {
-    return await done('erro', 'Erro durante a candidatura', { error: e.message.split('\n')[0].slice(0, 300) });
+    return await done('erro', 'Erro durante a candidatura', { error: friendlyError(e) });
   } finally {
     // mantém só a primeira aba aberta (sessões de login ficam no perfil do navegador)
     for (const p of context.pages().slice(1)) await p.close().catch(() => {});

@@ -230,3 +230,5 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.02em; margin: 0; }
 .panel h3.sub { font-family: var(--display); font-size: 14.5px; margin: 16px 0 4px; }
 .conta-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
 @media (max-width: 520px) { .conta-row { grid-template-columns: 1fr; } }
+
+.tela-login { margin-top: 6px; padding-left: 0; }

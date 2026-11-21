@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, ago } from '../api.js';
 import { Icon, Toggle, toast } from '../components/ui.jsx';
 
+const TELA = '/tela/vnc.html?path=tela/websockify&autoconnect=1&resize=scale';
 const SRC = { linkedin: 'LinkedIn', gupy: 'Gupy', greenhouse: 'Greenhouse', lever: 'Lever' };
 const lines = (arr) => (arr || []).join('\n');
 const fromLines = (s) => s.split(/\n|,/).map((x) => x.trim()).filter(Boolean);
@@ -153,7 +154,7 @@ export default function Perfil({ onChange }) {
                 </div>
               </div>
               <h3 className="sub">Contas do robô</h3>
-              <div className="muted small">Com isso ele faz login sozinho quando o site pedir. A senha fica criptografada na sua VPS e não volta para a tela. Se o site pedir código de verificação, confirme pela tela do robô.</div>
+              <div className="muted small">Duas formas: salve e-mail e senha e ele entra sozinho quando o site pedir, ou entre você mesmo uma vez pela tela do robô (é o jeito de usar "Continuar com Google"); o login fica salvo no navegador dele. A senha fica criptografada na sua VPS e não volta para a tela.</div>
               {contas && ['linkedin', 'gupy'].map((sv) => (
                 <div key={sv} className="conta">
                   <label className="label" htmlFor={`conta-${sv}-email`}>
@@ -164,11 +165,14 @@ export default function Perfil({ onChange }) {
                     <input className="input" type="password" autoComplete="new-password" aria-label={`Senha ${sv}`} placeholder={contas[sv].temSenha ? 'Senha salva (deixe vazio pra manter)' : 'Senha'} value={contaForm[sv].senha} onChange={(e) => setContaForm({ ...contaForm, [sv]: { ...contaForm[sv], senha: e.target.value } })} />
                     <button className="btn sm primary" onClick={() => salvarConta(sv)}>Salvar</button>
                   </div>
+                  <a className="btn sm ghost tela-login" href={TELA} target="_blank" rel="noreferrer" onClick={() => api('/robo/abrir', { method: 'POST', body: { site: sv } }).catch(() => {})}>
+                    Ou entre pela tela do robô (Google, código de verificação…) {Icon.out(14)}
+                  </a>
                 </div>
               ))}
               <div className="switch" style={{ marginTop: 8 }}>
                 <span>Tela do robô<br /><span className="muted small">Pra fazer login no LinkedIn e na Gupy uma vez, ou resolver um CAPTCHA</span></span>
-                <a className="btn sm" href="/tela/vnc.html?path=tela/websockify&autoconnect=1&resize=scale" target="_blank" rel="noreferrer">Abrir</a>
+                <a className="btn sm" href={TELA} target="_blank" rel="noreferrer">Abrir</a>
               </div>
             </section>
           )}
