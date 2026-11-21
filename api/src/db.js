@@ -56,6 +56,8 @@ create table if not exists applications (
   updated_at timestamptz not null default now()
 );
 create index if not exists applications_status_idx on applications(status, next_run_at);
+-- "Está certo, enviar": libera o envio desta candidatura mesmo com o modo ensaio ligado
+alter table applications add column if not exists enviar boolean not null default false;
 
 create table if not exists collector_runs (
   id serial primary key,

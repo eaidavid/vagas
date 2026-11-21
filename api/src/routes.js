@@ -133,6 +133,7 @@ export function registerRoutes(app) {
       'tentar-de-novo': ['aguardando', 'Você mandou tentar de novo'],
       cancelar: ['cancelada', 'Você cancelou'],
       'apliquei-eu': ['aplicada', 'Você aplicou manualmente'],
+      enviar: ['aguardando', 'Você conferiu o ensaio e mandou enviar'],
     };
     if (req.params.action === 'responder') {
       const { answers = [] } = req.body || {};
@@ -148,6 +149,7 @@ export function registerRoutes(app) {
     }
     const act = actions[req.params.action];
     if (!act) return reply.code(400).send({ error: 'Ação inválida.' });
+    if (req.params.action === 'enviar') await q('update applications set enviar = true where id = $1', [id]);
     await setStatus(id, act[0], act[1]);
     return { ok: true };
   });

@@ -57,9 +57,10 @@ for (;;) {
   }
   idle = 0;
   const { application, job, profile, config } = next;
-  log(`candidatura ${application.id}: ${job.data.title} · ${job.data.company} (${job.ats})${config.ensaio ? ' [ensaio]' : ''}`);
+  const ensaio = config.ensaio && !application.enviar;
+  log(`candidatura ${application.id}: ${job.data.title} · ${job.data.company} (${job.ats})${ensaio ? ' [ensaio]' : ''}`);
   const result = await Promise.race([
-    applyJob(context, { job, profile, resumePath: await resume(), ensaio: config.ensaio, log: (t) => log(`  ${t}`) }),
+    applyJob(context, { job, profile, resumePath: await resume(), ensaio, log: (t) => log(`  ${t}`) }),
     sleep(6 * 60000).then(() => ({ status: 'erro', text: 'Demorou demais', error: 'A candidatura passou de 6 minutos.' })),
   ]);
   log(`  resultado: ${result.status} · ${result.text}`);
@@ -67,6 +68,6 @@ for (;;) {
 
   // Pausa entre candidaturas, com variação, para manter um ritmo humano
   const [min, max] = [config.pausaMin ?? 2, config.pausaMax ?? 6];
-  if (result.status === 'aplicada' && !config.ensaio) await sleep((min + Math.random() * (max - min)) * 60000);
+  if (result.status === 'aplicada' && !ensaio) await sleep((min + Math.random() * (max - min)) * 60000);
   else await sleep(5000);
 }

@@ -98,7 +98,7 @@ export async function applyJob(context, { job, profile, resumePath, ensaio, log 
       const next = await findButton(page, NEXT_RE, scope);
       const submit = next ? null : await findButton(page, SUBMIT, scope);
       if (submit) {
-        if (ensaio) return await done('precisa_voce', 'Ensaio: formulário preenchido, não enviado', { error: 'Modo ensaio ligado: o robô preencheu tudo e parou antes de enviar. Confira o print e, se estiver certo, desligue o ensaio no Perfil.' });
+        if (ensaio) return await done('precisa_voce', 'Ensaio: formulário preenchido, não enviado', { error: 'Modo ensaio: o robô preencheu tudo e parou antes de enviar. Confira o print e toque em "Está certo, enviar". Para enviar todas direto, desligue o ensaio em Perfil → Robô.' });
         log('enviando');
         await submit.click();
         for (let i = 0; i < 15; i++) {

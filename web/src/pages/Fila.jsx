@@ -78,7 +78,9 @@ export default function Fila({ onChange }) {
 
 function AppCard({ a, act }) {
   const [showLog, setShowLog] = useState(false);
-  const lastQ = [...a.log].reverse().find((l) => l.questions)?.questions || [];
+  const lastEntry = a.log[a.log.length - 1] || {};
+  const lastQ = lastEntry.questions || [];
+  const isEnsaio = a.status === 'precisa_voce' && /^Ensaio/.test(lastEntry.text || '');
   const lastShot = [...a.log].reverse().find((l) => l.screenshot)?.screenshot;
   const lastFilled = [...a.log].reverse().find((l) => l.filled)?.filled || [];
   const [answers, setAnswers] = useState({});
@@ -120,6 +122,11 @@ function AppCard({ a, act }) {
         <a className="shot" href={`/api/prints/${lastShot}`} target="_blank" rel="noreferrer" title="Abrir o print em tamanho real">
           <img src={`/api/prints/${lastShot}`} alt="Print da tela do robô" loading="lazy" />
         </a>
+      )}
+      {isEnsaio && (
+        <div className="row">
+          <button className="btn primary sm" onClick={() => act(a, 'enviar', null, 'O robô vai enviar esta candidatura')}>{Icon.check(16)} Está certo, enviar</button>
+        </div>
       )}
       <div className="row">
         <a className="btn sm" href={j.applyUrl || j.url} target="_blank" rel="noreferrer">Abrir vaga {Icon.out(14)}</a>

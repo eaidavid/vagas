@@ -54,6 +54,7 @@ export async function report(id, { status, text, error, questions, screenshot, f
 
 export async function setStatus(id, status, text) {
   await q('update applications set status = $2, locked_at = null, next_run_at = now(), updated_at = now() where id = $1', [id, status]);
-  if (status === 'aguardando') await q('update applications set error = null where id = $1', [id]);
+  // Voltou para o robô por decisão sua: zera as tentativas (ensaios e perguntas não contam como erro)
+  if (status === 'aguardando') await q('update applications set error = null, attempts = 0 where id = $1', [id]);
   await addLog(id, text);
 }
