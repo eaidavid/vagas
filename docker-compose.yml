@@ -1,0 +1,38 @@
+# Vagas. Instalação na VPS: deploy/install.sh (ao lado do Coolify, com HTTPS automático).
+# Variáveis ficam em .env no servidor, nunca no repositório.
+services:
+  vagas:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://vagas:${POSTGRES_PASSWORD}@db:5432/vagas
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ROBO_TOKEN: ${ROBO_TOKEN}
+      COLLECT_EVERY_HOURS: ${COLLECT_EVERY_HOURS:-6}
+      DATA_DIR: /data
+    volumes:
+      - vagas-data:/data   # currículo em PDF
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "3000"
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vagas
+      POSTGRES_DB: vagas
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - vagas-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vagas"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  vagas-data:
+  vagas-db:
