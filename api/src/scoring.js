@@ -9,11 +9,11 @@ export const norm = (s = '') =>
 
 const has = (text, re) => re.test(text);
 
-const AREA = /\b(desenvolvedor|desenvolvedora|developer|dev|programador|programadora|front[\s-]?end|frontend|full[\s-]?stack|fullstack|web|software|react|javascript|typescript|node|ui engineer|engenheir[oa] de software|analista de desenvolvimento|analista desenvolvedor)\b/;
+const AREA = /\b(desenvolvedor|desenvolvedora|developer|dev|programador|programadora|front[\s-]?end|frontend|full[\s-]?stack|fullstack|react|javascript|typescript|node|software engineer|software developer|engenheir[oa] de software|desenvolvimento de software|analista de desenvolvimento|analista desenvolvedor|web developer|desenvolvimento web|ui engineer|ui developer)\b/;
 const LEVEL_UP = /\b(senior|sr\.?|pleno|pl\.?|especialista|lead|lider|tech lead|staff|principal|gerente|coordenador|coordenadora|head|arquitet[oa]|iii|ii)\b/;
 const LEVEL_OK = /\b(junior|jr\.?|estagio|estagiari[oa]|trainee|aprendiz|iniciante|entry|intern|internship|primeiro emprego)\b/;
 const INTERN = /\b(estagio|estagiari[oa]|intern|internship)\b/;
-const OTHER_AREA = /\b(vendas|vendedor|comercial|suporte n[1-3]|help ?desk|motorista|atendente|financeiro|contabil|marketing|recepcionista|auxiliar administrativo|enfermeir|professor)\b/;
+const OTHER_AREA = /\b(vendas|vendedor|comercial|suporte|help ?desk|motorista|atendente|financeiro|contabil|marketing|analytics|seo|growth|trafego|social media|recepcionista|auxiliar administrativo|enfermeir|professor|analista de dados|cientista de dados|qa manual)\b/;
 // Linguagens fora do currículo: se aparecem no TÍTULO, a vaga é de outra stack
 const OTHER_STACK = /\b(java|\.net|dotnet|c#|php|python|golang|go lang|ruby|advpl|protheus|delphi|cobol|abap|sap|kotlin|swift|flutter|android|ios|salesforce|genexus|oracle|power ?bi|dados|data)\b/;
 

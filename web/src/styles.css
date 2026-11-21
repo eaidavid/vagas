@@ -126,14 +126,14 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.02em; margin: 0; }
 .progress i { flex: 1; height: 3px; border-radius: 2px; background: var(--line); }
 .progress i.done { background: var(--text); }
 .stack { position: relative; flex: 1; min-height: 0; }
-.reel { position: absolute; inset: 0; background: var(--card); border: 1px solid var(--line); border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; touch-action: pan-y; will-change: transform; }
+.reel { user-select: none; -webkit-user-select: none; position: absolute; inset: 0; background: var(--card); border: 1px solid var(--line); border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; touch-action: pan-y; will-change: transform; }
 .reel.behind { transform: scale(0.95) translateY(10px); opacity: 0.5; pointer-events: none; }
 .reel .head { padding: 18px 18px 14px; }
 .reel .company { display: flex; align-items: center; gap: 10px; color: var(--muted); font-weight: 600; font-size: 14px; }
 .reel .logo { width: 34px; height: 34px; border-radius: 10px; background: var(--card-2); object-fit: cover; flex: none; display: grid; place-items: center; font-weight: 800; color: var(--text); }
 .reel h2 { font-size: 25px; font-weight: 800; line-height: 1.15; margin: 12px 0 10px; }
 .reel .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.reel .scroll { flex: 1; overflow: auto; padding: 0 18px 18px; overscroll-behavior: contain; }
+.reel .scroll { user-select: text; -webkit-user-select: text; flex: 1; overflow: auto; padding: 0 18px 18px; overscroll-behavior: contain; }
 .reel .fit { background: var(--bg-2); border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; }
 .reel .fit-top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
 .reel .fit-top b { font-family: var(--display); font-size: 15px; }
@@ -183,7 +183,8 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.02em; margin: 0; }
 .error { color: var(--bad); font-size: 13.5px; margin-top: 10px; }
 
 /* Toast */
-.toast { position: fixed; left: 50%; bottom: calc(var(--tab-h) + var(--safe-b) + 16px); transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 12px 10px 16px; border-radius: 14px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 12px; z-index: 60; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4); animation: up 0.2s; max-width: calc(100% - 32px); }
+.toast { position: fixed; left: 50%; top: max(14px, env(safe-area-inset-top)); transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 12px 10px 16px; border-radius: 14px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 12px; z-index: 60; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4); animation: down 0.2s; max-width: calc(100% - 32px); }
+@keyframes down { from { transform: translate(-50%, -16px); opacity: 0; } }
 .toast button { color: var(--bg); text-decoration: underline; font-weight: 700; }
 
 .spin { width: 16px; height: 16px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }

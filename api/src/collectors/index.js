@@ -122,6 +122,7 @@ export async function runCollectors(only = null) {
         if (!raw.title) return;
         try {
           if ((await upsert(finalize(raw, prefs))) === 'new') inserted++;
+          if (found % 10 === 0) await q('update collector_runs set found = $2, inserted = $3 where id = $1', [runId, found, inserted]);
         } catch (e) {
           log(`${name}: não deu para salvar "${raw.title}" (${e.message})`);
         }

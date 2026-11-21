@@ -78,7 +78,7 @@ export default function Perfil({ onChange }) {
                 <div key={s} className="switch">
                   <span>{SRC[s]}</span>
                   <span className="small" style={{ color: r?.error ? 'var(--bad)' : 'var(--muted)', textAlign: 'right' }}>
-                    {!r ? 'ainda não rodou' : r.error ? `erro: ${r.error}` : `${r.found} lidas · ${r.inserted} novas · ${ago(r.finished_at || r.started_at)}`}
+                    {!r ? 'ainda não rodou' : !r.finished_at ? `buscando… ${r.found} lidas, ${r.inserted} novas` : r.error ? `erro: ${r.error}` : `${r.found} lidas · ${r.inserted} novas · ${ago(r.finished_at || r.started_at)}`}
                   </span>
                 </div>
               );

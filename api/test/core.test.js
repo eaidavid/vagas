@@ -72,3 +72,10 @@ test('Gupy: converte o formato da API', () => {
   assert.equal(j.employmentType, 'Estágio');
   assert.equal(j.location, 'Goiânia, Goiás');
 });
+
+test('Nota: "web" sozinho não faz a vaga ser de desenvolvimento', () => {
+  const wa = scoreJob({ title: 'Web Analytics Júnior', location: 'Brasil', workplace: 'remoto', description: 'JavaScript, HTML' }, prefs);
+  const wd = scoreJob({ title: 'Desenvolvedor Web Júnior', location: 'Brasil', workplace: 'remoto', description: 'JavaScript, HTML' }, prefs);
+  assert.equal(wa.block, 'area');
+  assert.equal(wd.block, null);
+});
