@@ -58,6 +58,8 @@ create table if not exists applications (
 create index if not exists applications_status_idx on applications(status, next_run_at);
 -- "Está certo, enviar": libera o envio desta candidatura mesmo com o modo ensaio ligado
 alter table applications add column if not exists enviar boolean not null default false;
+-- Progresso ao vivo enquanto o robô aplica: { pct, texto, shot, at }
+alter table applications add column if not exists progress jsonb;
 
 -- Pedidos para o Claude (botão "Pedir ao Claude"). tipo: analisar · preparar · responder
 create table if not exists requests (

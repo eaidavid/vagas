@@ -13,8 +13,27 @@ export default function Perfil({ onChange }) {
   const [collect, setCollect] = useState(null);
   const [robo, setRobo] = useState(null);
   const [pedidos, setPedidos] = useState([]);
+  const [contas, setContas] = useState(null);
+  const [contaForm, setContaForm] = useState({ linkedin: { email: '', senha: '' }, gupy: { email: '', senha: '' } });
 
-  useEffect(() => { api('/profile').then(setP); api('/robo/config').then(setRobo).catch(() => {}); }, []);
+  useEffect(() => {
+    api('/profile').then(setP);
+    api('/robo/config').then(setRobo).catch(() => {});
+    api('/robo/contas').then((c) => {
+      setContas(c);
+      setContaForm({ linkedin: { email: c.linkedin.email, senha: '' }, gupy: { email: c.gupy.email, senha: '' } });
+    }).catch(() => {});
+  }, []);
+  const salvarConta = async (servico) => {
+    try {
+      const c = await api(`/robo/contas/${servico}`, { method: 'PUT', body: contaForm[servico] });
+      setContas(c);
+      setContaForm((f) => ({ ...f, [servico]: { ...f[servico], senha: '' } }));
+      toast(`Conta ${servico === 'linkedin' ? 'do LinkedIn' : 'da Gupy'} salva. O robô entra sozinho quando precisar.`);
+    } catch (e) {
+      toast(e.message);
+    }
+  };
   const setRoboCfg = async (patch) => {
     const next = { ...robo, ...patch };
     setRobo(next);
@@ -133,6 +152,20 @@ export default function Perfil({ onChange }) {
                   </div>
                 </div>
               </div>
+              <h3 className="sub">Contas do robô</h3>
+              <div className="muted small">Com isso ele faz login sozinho quando o site pedir. A senha fica criptografada na sua VPS e não volta para a tela. Se o site pedir código de verificação, confirme pela tela do robô.</div>
+              {contas && ['linkedin', 'gupy'].map((sv) => (
+                <div key={sv} className="conta">
+                  <label className="label" htmlFor={`conta-${sv}-email`}>
+                    {sv === 'linkedin' ? 'LinkedIn' : 'Gupy'} {contas[sv].temSenha ? <span className="tag auto">senha salva</span> : <span className="tag">sem senha</span>}
+                  </label>
+                  <div className="conta-row">
+                    <input id={`conta-${sv}-email`} className="input" type="email" autoComplete="off" placeholder="E-mail da conta" value={contaForm[sv].email} onChange={(e) => setContaForm({ ...contaForm, [sv]: { ...contaForm[sv], email: e.target.value } })} />
+                    <input className="input" type="password" autoComplete="new-password" aria-label={`Senha ${sv}`} placeholder={contas[sv].temSenha ? 'Senha salva (deixe vazio pra manter)' : 'Senha'} value={contaForm[sv].senha} onChange={(e) => setContaForm({ ...contaForm, [sv]: { ...contaForm[sv], senha: e.target.value } })} />
+                    <button className="btn sm primary" onClick={() => salvarConta(sv)}>Salvar</button>
+                  </div>
+                </div>
+              ))}
               <div className="switch" style={{ marginTop: 8 }}>
                 <span>Tela do robô<br /><span className="muted small">Pra fazer login no LinkedIn e na Gupy uma vez, ou resolver um CAPTCHA</span></span>
                 <a className="btn sm" href="/tela/vnc.html?path=tela/websockify&autoconnect=1&resize=scale" target="_blank" rel="noreferrer">Abrir</a>

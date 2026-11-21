@@ -7,6 +7,7 @@ import { getProfile, saveProfile } from './profile.js';
 import { runCollectors, isRunning, recentActivity, rescoreAll } from './collectors/index.js';
 import { enqueue, setStatus, claimNext, report } from './queue.js';
 import { ATS_INFO } from './ats.js';
+import { SERVICOS, contasPublicas, salvarConta, contasParaRobo } from './contas.js';
 
 const DATA = process.env.DATA_DIR || '/data';
 const CV = path.join(DATA, 'curriculo.pdf');
@@ -14,6 +15,10 @@ const PRINTS = path.join(DATA, 'prints');
 
 /* Ajustes do robô (Perfil → Robô). Começa ligado e em modo ensaio: preenche tudo e não envia. */
 const ROBO_DEFAULT = { ligado: true, ensaio: true, limiteDia: 20, horaInicio: 8, horaFim: 22, pausaMin: 2, pausaMax: 6 };
+async function appliedToday() {
+  const { rows } = await q("select count(*)::int n from applications where status = 'aplicada' and (updated_at at time zone 'America/Sao_Paulo')::date = (now() at time zone 'America/Sao_Paulo')::date");
+  return rows[0].n;
+}
 export async function roboConfig() {
   return { ...ROBO_DEFAULT, ...(await kvGet('roboConfig', {})) };
 }
@@ -60,6 +65,8 @@ export function registerRoutes(app) {
       collecting: isRunning(),
       roboLastSeen: await kvGet('roboLastSeen'),
       robo: await roboConfig(),
+      roboStatus: await kvGet('roboStatus'),
+      aplicadasHoje: await appliedToday(),
       pedidos: (await q("select count(*)::int n from requests where status = 'pendente'")).rows[0].n,
     };
   });
@@ -125,7 +132,7 @@ export function registerRoutes(app) {
   app.get('/api/applications', async () => {
     const { rows } = await q('select a.*, row_to_json(j) j from applications a join jobs j on j.id = a.job_id order by a.updated_at desc limit 300');
     return rows.map((r) => ({
-      id: r.id, status: r.status, attempts: r.attempts, error: r.error, log: r.log, updatedAt: r.updated_at, createdAt: r.created_at, nextRunAt: r.next_run_at,
+      id: r.id, status: r.status, attempts: r.attempts, error: r.error, log: r.log, progress: r.progress, updatedAt: r.updated_at, createdAt: r.created_at, nextRunAt: r.next_run_at,
       job: summary({ ...r.j, data: r.j.data }),
     }));
   });
@@ -188,11 +195,19 @@ export function registerRoutes(app) {
     await kvSet('roboConfig', next);
     return next;
   });
+  app.get('/api/robo/contas', async () => contasPublicas());
+  app.put('/api/robo/contas/:servico', async (req, reply) => {
+    if (!SERVICOS.includes(req.params.servico)) return reply.code(400).send({ error: 'Serviço inválido.' });
+    const { email = '', senha = '', apagar = false } = req.body || {};
+    if (!apagar && !/^\S+@\S+\.\S+$/.test(String(email).trim())) return reply.code(400).send({ error: 'Informe o e-mail da conta.' });
+    await salvarConta(req.params.servico, { email, senha, apagar });
+    return contasPublicas();
+  });
   app.get('/api/prints/:name', async (req, reply) => {
     const name = path.basename(req.params.name);
     const file = path.join(PRINTS, name);
     if (!/^\d+-\d+\.jpg$/.test(name) || !existsSync(file)) return reply.code(404).send({ error: 'Print não encontrado.' });
-    return reply.type('image/jpeg').header('cache-control', 'private, max-age=86400').send(await readFile(file));
+    return reply.type('image/jpeg').header('cache-control', name.endsWith('-0.jpg') ? 'no-store' : 'private, max-age=86400').send(await readFile(file));
   });
 
   /* Perfil */
@@ -236,15 +251,33 @@ export function registerRoutes(app) {
   app.post('/api/public/robo/proxima', async (req, reply) => {
     if (!robo(req, reply)) return;
     await kvSet('roboLastSeen', new Date().toISOString());
+    const status = (estado, extra = {}) => kvSet('roboStatus', { estado, at: new Date().toISOString(), ...extra });
     const config = await roboConfig();
-    if (!config.ligado) return { pausado: true };
+    if (!config.ligado) { await status('pausado'); return { pausado: true }; }
     const hora = Number(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: 'numeric', hour12: false })) % 24;
-    if (hora < config.horaInicio || hora >= config.horaFim) return { foraDoHorario: true };
-    const { rows } = await q("select count(*)::int n from applications where status = 'aplicada' and (updated_at at time zone 'America/Sao_Paulo')::date = (now() at time zone 'America/Sao_Paulo')::date");
-    if (rows[0].n >= config.limiteDia) return { limite: true };
+    if (hora < config.horaInicio || hora >= config.horaFim) { await status('fora_horario'); return { foraDoHorario: true }; }
+    if ((await appliedToday()) >= config.limiteDia) { await status('limite'); return { limite: true }; }
     const next = await claimNext();
-    if (!next) return { vazia: true };
-    return { ...next, profile: await getProfile(), temCurriculo: existsSync(CV), config };
+    if (!next) { await status('esperando'); return { vazia: true }; }
+    await status('aplicando', { applicationId: next.application.id, titulo: next.job.data.title, empresa: next.job.data.company });
+    return { ...next, profile: await getProfile(), temCurriculo: existsSync(CV), config, contas: await contasParaRobo() };
+  });
+  app.post('/api/public/robo/:id/progresso', async (req, reply) => {
+    if (!robo(req, reply)) return;
+    const id = Number(req.params.id);
+    const { pct = 0, texto = '', screenshot } = req.body || {};
+    let shot;
+    if (screenshot) {
+      shot = `${id}-0.jpg`; // print ao vivo: sempre o mesmo arquivo, sobrescrito a cada etapa
+      await mkdir(PRINTS, { recursive: true });
+      await writeFile(path.join(PRINTS, shot), Buffer.from(String(screenshot), 'base64'));
+    }
+    await kvSet('roboLastSeen', new Date().toISOString());
+    await q(
+      `update applications set progress = jsonb_build_object('pct', $2::int, 'texto', $3::text, 'at', now(), 'shot', coalesce($4::text, progress->>'shot')) where id = $1 and status = 'aplicando'`,
+      [id, Math.max(0, Math.min(100, Math.round(Number(pct) || 0))), String(texto).slice(0, 200), shot || null],
+    );
+    return { ok: true };
   });
   app.post('/api/public/robo/:id/resultado', async (req, reply) => {
     if (!robo(req, reply)) return;

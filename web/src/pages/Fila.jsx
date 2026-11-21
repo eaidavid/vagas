@@ -11,20 +11,36 @@ const GROUPS = [
   { id: 'cancelada', title: 'Canceladas' },
 ];
 
+/* Estado do robô em uma frase, a partir do que ele contou na última conversa com o painel */
+function roboLine(stats, apps) {
+  const seen = stats?.roboLastSeen && Date.now() - new Date(stats.roboLastSeen).getTime() < 3 * 60000;
+  const st = stats?.roboStatus || {};
+  const cfg = stats?.robo || {};
+  const aplicando = apps?.find((a) => a.status === 'aplicando');
+  if (!seen) return { tone: 'off', title: 'Robô desconectado', sub: 'As vagas esperam na fila. Se continuar assim, veja os registros do robô na VPS.' };
+  if (aplicando) return { tone: 'on', title: `Aplicando: ${aplicando.job.title}`, sub: aplicando.progress?.texto || 'Começando…', pct: aplicando.progress?.pct ?? 5 };
+  if (st.estado === 'pausado') return { tone: 'idle', title: 'Robô pausado', sub: 'Ligue em Perfil → Robô.' };
+  if (st.estado === 'fora_horario') return { tone: 'idle', title: 'Fora do horário', sub: `O robô trabalha das ${cfg.horaInicio}h às ${cfg.horaFim}h (horário de Brasília).` };
+  if (st.estado === 'limite') return { tone: 'idle', title: 'Limite do dia atingido', sub: `${stats.aplicadasHoje} de ${cfg.limiteDia} candidaturas hoje. Amanhã ele continua.` };
+  const waiting = apps?.filter((a) => a.status === 'aguardando').length || 0;
+  return { tone: 'on', title: waiting ? `${waiting} vaga${waiting > 1 ? 's' : ''} na fila` : 'Robô ligado, esperando vagas', sub: waiting ? 'O robô pega a próxima em instantes.' : 'Toque em "É minha!" na Triagem e ele começa.' };
+}
+
 export default function Fila({ onChange }) {
   const [apps, setApps] = useState(null);
-  const [roboSeen, setRoboSeen] = useState(null);
-  const [robo, setRobo] = useState(null);
+  const [stats, setStats] = useState(null);
 
   const load = useCallback(async () => {
     setApps(await api('/applications'));
-    api('/stats').then((s) => { setRoboSeen(s.roboLastSeen || null); setRobo(s.robo || null); }).catch(() => {});
+    api('/stats').then(setStats).catch(() => {});
   }, []);
+  // Atualiza rápido enquanto o robô está trabalhando
+  const busy = apps?.some((a) => a.status === 'aplicando' || a.status === 'aguardando');
   useEffect(() => {
     load();
-    const h = setInterval(load, DEMO ? 1500 : 10000);
+    const h = setInterval(load, DEMO ? 1500 : busy ? 3000 : 10000);
     return () => clearInterval(h);
-  }, [load]);
+  }, [load, busy]);
 
   const act = async (a, action, body, msg) => {
     try {
@@ -37,22 +53,32 @@ export default function Fila({ onChange }) {
     }
   };
 
-  const roboOn = roboSeen && Date.now() - new Date(roboSeen).getTime() < 5 * 60000;
+  const line = roboLine(stats, apps);
+  const count = (st) => apps?.filter((a) => a.status === st).length || 0;
 
   return (
     <>
       <div className="topbar"><h1>Fila de aplicação</h1></div>
       <main className="main">
         <div className="wrap">
-          {!roboOn && (
-            <div className="notice">
-              O robô não está conectado agora. As vagas esperam na fila; enquanto isso você pode abrir cada uma, aplicar e tocar em <b>Apliquei</b>.
-            </div>
-          )}
-          {roboOn && robo?.ensaio && (
-            <div className="notice">
-              <b>Modo ensaio:</b> o robô preenche cada formulário e para antes de enviar, com um print pra você conferir. Desligue em Perfil → Robô quando estiver confiante.
-            </div>
+          {stats && (
+            <section className={`robo-status ${line.tone}`} aria-live="polite">
+              <div className="robo-row">
+                <span className="robo-dot" />
+                <div className="robo-text">
+                  <b>{line.title}</b>
+                  <span>{line.sub}</span>
+                </div>
+              </div>
+              {line.pct != null && <div className="bar"><i style={{ width: `${line.pct}%` }} /></div>}
+              <div className="robo-nums">
+                <span><b>{stats.aplicadasHoje ?? 0}</b> hoje{stats.robo ? ` de ${stats.robo.limiteDia}` : ''}</span>
+                <span><b>{count('aguardando')}</b> na fila</span>
+                <span><b>{count('precisa_voce')}</b> precisam de você</span>
+                <span><b>{count('aplicada')}</b> aplicadas</span>
+              </div>
+              {stats.robo?.ensaio && <div className="robo-ensaio">Modo ensaio ligado: preenche e para antes de enviar.</div>}
+            </section>
           )}
           {apps && !apps.length && (
             <div className="empty">
@@ -93,6 +119,17 @@ function AppCard({ a, act }) {
         <AtsTag job={j} />
         {a.attempts > 0 && <span className="tag">{a.attempts} tentativa{a.attempts > 1 ? 's' : ''}</span>}
       </div>
+      {a.status === 'aplicando' && (
+        <div className="live">
+          <div className="live-top"><span className="spin" /> {a.progress?.texto || 'O robô está abrindo a vaga…'}</div>
+          <div className="bar"><i style={{ width: `${a.progress?.pct ?? 5}%` }} /></div>
+          {a.progress?.shot && (
+            <a className="shot" href={`/api/prints/${a.progress.shot}?t=${encodeURIComponent(a.progress.at)}`} target="_blank" rel="noreferrer" title="Tela do robô agora">
+              <img src={`/api/prints/${a.progress.shot}?t=${encodeURIComponent(a.progress.at)}`} alt="Tela do robô agora" />
+            </a>
+          )}
+        </div>
+      )}
       {a.error && <div className="err">{a.error}</div>}
 
       {a.status === 'precisa_voce' && lastQ.length > 0 && (
@@ -119,7 +156,7 @@ function AppCard({ a, act }) {
         </div>
       )}
 
-      {lastShot && (
+      {lastShot && a.status !== 'aplicando' && (
         <a className="shot" href={`/api/prints/${lastShot}`} target="_blank" rel="noreferrer" title="Abrir o print em tamanho real">
           <img src={`/api/prints/${lastShot}`} alt="Print da tela do robô" loading="lazy" />
         </a>

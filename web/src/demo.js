@@ -32,10 +32,14 @@ function simulate(a) {
   setTimeout(() => {
     if (a.status !== 'aguardando') return;
     a.status = 'aplicando'; a.attempts += 1;
+    a.progress = { pct: 15, texto: `Abrindo a vaga em ${job.atsInfo.nome}`, at: now() };
     log(a, `Robô abriu a candidatura em ${job.atsInfo.nome}`);
   }, 2500);
+  setTimeout(() => { if (a.status === 'aplicando') a.progress = { pct: 45, texto: 'Preenchendo o formulário', at: now() }; }, 4000);
+  setTimeout(() => { if (a.status === 'aplicando') a.progress = { pct: 80, texto: '14 campos preenchidos', at: now() }; }, 5500);
   setTimeout(() => {
     if (a.status !== 'aplicando') return;
+    a.progress = null;
     if (job.atsInfo.robo === 'auto') {
       a.status = 'aplicada';
       log(a, 'Formulário preenchido com o seu perfil e enviado');
@@ -61,7 +65,7 @@ export async function demoApi(path, { method = 'GET', body } = {}) {
 
   if (p === '/stats') {
     const count = (list) => list.reduce((acc, x) => ({ ...acc, [x.status]: (acc[x.status] || 0) + 1 }), {});
-    return { jobs: count(jobs), applications: count(apps), novas24h: jobs.length, lastCollect, collecting, roboLastSeen: now() };
+    return { jobs: count(jobs), applications: count(apps), novas24h: jobs.length, lastCollect, collecting, roboLastSeen: now(), roboStatus: { estado: 'esperando' }, robo: { ligado: true, ensaio: false, limiteDia: 20, horaInicio: 8, horaFim: 22 }, aplicadasHoje: apps.filter((x) => x.status === 'aplicada').length, pedidos: pedidos.filter((x) => x.status === 'pendente').length };
   }
 
   if (p === '/jobs' && method === 'GET') {

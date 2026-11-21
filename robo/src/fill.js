@@ -210,13 +210,14 @@ export async function fillForm(page, { profile, job, resumePath, scope = null })
 export const SUBMIT = /^(submit|send|enviar|apply|candidatar|finalizar|concluir)|submit application|enviar candidatura|send application|apply now|candidatar-se|finalizar candidatura/i;
 export const NEXT = /^(next|avançar|avancar|continuar|continue|próximo|proximo|prosseguir|review|revisar)\b/i;
 
-export async function findButton(page, re, scope = null) {
+export async function findButton(page, re, scope = null, exclude = null) {
   const root = scope ? page.locator(scope) : page;
   const btns = root.locator('button:visible, input[type=submit]:visible, a[role=button]:visible');
   const n = await btns.count();
   for (let i = n - 1; i >= 0; i--) {
     const b = btns.nth(i);
     const t = ((await b.innerText().catch(() => '')) || (await b.getAttribute('value')) || (await b.getAttribute('aria-label')) || '').trim();
+    if (exclude && t && t === exclude) continue; // ex.: o próprio botão "Candidatar-se" da página não é o envio
     if (re.test(t) && (await b.isEnabled().catch(() => false))) return b;
   }
   return null;

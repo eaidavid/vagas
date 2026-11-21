@@ -56,11 +56,18 @@ for (;;) {
     continue;
   }
   idle = 0;
-  const { application, job, profile, config } = next;
+  const { application, job, profile, config, contas = {} } = next;
   const ensaio = config.ensaio && !application.enviar;
   log(`candidatura ${application.id}: ${job.data.title} · ${job.data.company} (${job.ats})${ensaio ? ' [ensaio]' : ''}`);
+  // Progresso ao vivo para o painel: etapa, porcentagem e, quando vale, um print da tela
+  const progress = async (pct, texto, page = null) => {
+    try {
+      const shot = page ? (await page.screenshot({ type: 'jpeg', quality: 45 }).catch(() => null))?.toString('base64') : undefined;
+      await call(`/${application.id}/progresso`, { pct, texto, screenshot: shot });
+    } catch { /* progresso é só informativo */ }
+  };
   const result = await Promise.race([
-    applyJob(context, { job, profile, resumePath: await resume(), ensaio, log: (t) => log(`  ${t}`) }),
+    applyJob(context, { job, profile, resumePath: await resume(), ensaio, contas, log: (t) => log(`  ${t}`), progress }),
     sleep(6 * 60000).then(() => ({ status: 'erro', text: 'Demorou demais', error: 'A candidatura passou de 6 minutos.' })),
   ]);
   log(`  resultado: ${result.status} · ${result.text}`);

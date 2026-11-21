@@ -44,8 +44,12 @@ Um contêiner com Chromium que pega uma vaga por vez da fila e aplica.
   formulário que aparecer.
 - **Modo ensaio (começa ligado)**: preenche tudo e para antes de enviar, com print da tela na Fila.
 - **Limites**: liga/desliga, candidaturas por dia, horário e pausa de 2 a 6 min entre envios (Perfil → Robô).
-- **Tela do robô** (`/tela`, com senha): para fazer login no LinkedIn e na Gupy uma vez (o perfil do navegador fica
-  salvo) e para resolver CAPTCHA.
+- **Login automático**: com o e-mail e a senha salvos em Perfil → Robô → Contas (senha criptografada com AES-256-GCM no
+  banco da VPS), o robô entra sozinho no LinkedIn e na Gupy quando o site pedir. Se pedirem código de verificação, ele
+  para e avisa.
+- **Progresso ao vivo**: a Fila mostra o estado do robô (aplicando, esperando, pausado, fora do horário, limite) e, na
+  vaga em andamento, a etapa, a barra e um print da tela atualizado a cada etapa.
+- **Tela do robô** (`/tela`, com senha): para entrar manualmente quando o site pedir verificação e para resolver CAPTCHA.
 
 Testado em formulários reais do Lever e do Greenhouse em modo ensaio. LinkedIn e Gupy exigem login e só podem ser
 validados na VPS com as suas contas.
