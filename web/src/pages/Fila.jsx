@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, ago } from '../api.js';
+import { api, ago, DEMO } from '../api.js';
 import { AtsTag, Icon, toast } from '../components/ui.jsx';
 
 const GROUPS = [
@@ -21,7 +21,7 @@ export default function Fila({ onChange }) {
   }, []);
   useEffect(() => {
     load();
-    const h = setInterval(load, 10000);
+    const h = setInterval(load, DEMO ? 1500 : 10000);
     return () => clearInterval(h);
   }, [load]);
 

@@ -1,4 +1,9 @@
-export async function api(path, { method = 'GET', body } = {}) {
+// Modo demonstração (build com VITE_DEMO=1): sem servidor, dados de exemplo. Fica fora do build normal.
+export const DEMO = import.meta.env.VITE_DEMO === '1';
+
+export async function api(path, opts = {}) {
+  if (import.meta.env.VITE_DEMO === '1') return (await import('./demo.js')).demoApi(path, opts);
+  const { method = 'GET', body } = opts;
   const res = await fetch(`/api${path}`, {
     method,
     headers: body ? { 'content-type': 'application/json' } : {},
