@@ -51,6 +51,27 @@ export default function Feed({ stats, onChange, go }) {
     });
   };
 
+  // "É minha!": vai direto para a fila do robô (com desfazer enquanto ele não começou)
+  const mine = async (job) => {
+    try {
+      await api(`/jobs/${job.id}/minha`, { method: 'POST' });
+    } catch (e) {
+      toast(e.message);
+      return;
+    }
+    setData((d) => ({ total: d.total - 1, items: d.items.filter((j) => j.id !== job.id) }));
+    onChange();
+    toast('É sua! Foi para a fila do robô', async () => {
+      try {
+        await api(`/jobs/${job.id}/desfazer-minha`, { method: 'POST' });
+        load();
+        onChange();
+      } catch (e) {
+        toast(e.message);
+      }
+    });
+  };
+
   const collect = async () => {
     setCollecting(true);
     await api('/collect', { method: 'POST', body: {} });
@@ -59,7 +80,6 @@ export default function Feed({ stats, onChange, go }) {
   };
 
   const items = data?.items || [];
-  const top = items.filter((j) => j.score >= 70 && !j.block);
   const last = stats?.lastCollect?.at;
 
   return (
@@ -73,7 +93,7 @@ export default function Feed({ stats, onChange, go }) {
       <main className="main">
         <div className="wrap">
           <div className="chips">
-            <button className={`chip ${view === 'nova' ? 'on' : ''}`} onClick={() => setView('nova')}>Novas{stats?.jobs?.nova ? ` · ${stats.jobs.nova}` : ''}</button>
+            <button className={`chip ${view === 'nova' ? 'on' : ''}`} onClick={() => setView('nova')}>Novas{stats?.novasVisiveis ? ` · ${stats.novasVisiveis}` : ''}</button>
             <button className={`chip ${view === 'descartada' ? 'on' : ''}`} onClick={() => setView('descartada')}>Descartadas</button>
             <span style={{ width: 1, background: 'var(--line)', flex: 'none' }} />
             {FILTERS.map((f) => (
@@ -89,10 +109,8 @@ export default function Feed({ stats, onChange, go }) {
                 {data.total} vaga{data.total === 1 ? '' : 's'}
                 {last && <> · última busca {ago(last)}</>}
               </span>
-              {view === 'nova' && top.length > 1 && (
-                <button className="btn sm" onClick={() => move(top.map((j) => j.id), 'triagem', `${top.length} vagas foram para a triagem`)}>
-                  {Icon.plus(16)} {top.length} melhores para triagem
-                </button>
+              {view === 'nova' && items.length > 0 && (
+                <button className="btn sm" onClick={() => go('reels')}>{Icon.reels(16)} Ver uma por vez</button>
               )}
             </div>
           )}
@@ -103,7 +121,6 @@ export default function Feed({ stats, onChange, go }) {
                 <>
                   <h2>{collecting ? 'Procurando vagas…' : 'Nada novo por aqui'}</h2>
                   <div>{collecting ? 'As vagas aparecem aqui assim que a busca terminar.' : 'Rode uma busca agora ou ajuste os termos no Perfil.'}</div>
-                  {stats?.jobs?.triagem > 0 && <button className="btn primary" onClick={() => go('reels')}>Abrir triagem ({stats.jobs.triagem})</button>}
                 </>
               ) : (
                 <h2>Nenhuma vaga descartada</h2>
@@ -124,7 +141,7 @@ export default function Feed({ stats, onChange, go }) {
                 <div className="acts">
                   {view === 'nova' ? (
                     <>
-                      <button className="icon-btn" title="Mandar para a triagem" onClick={() => move([j.id], 'triagem', 'Foi para a triagem')} style={{ color: 'var(--accent)' }}>{Icon.plus()}</button>
+                      <button className="icon-btn mine-btn" title="É minha! (vai para o robô aplicar)" aria-label="É minha" onClick={() => mine(j)}>{Icon.check(20)}</button>
                       <button className="icon-btn" title="Descartar" onClick={() => move([j.id], 'descartada', 'Vaga descartada')} style={{ color: 'var(--muted)' }}>{Icon.x(18)}</button>
                     </>
                   ) : (
@@ -151,7 +168,7 @@ export default function Feed({ stats, onChange, go }) {
           actions={(job) =>
             view === 'nova' ? (
               <>
-                <button className="btn primary" onClick={() => { move([job.id], 'triagem', 'Foi para a triagem'); setOpen(null); }}>{Icon.plus(18)} Triagem</button>
+                <button className="btn primary" onClick={() => { mine(job); setOpen(null); }}>{Icon.check(18)} É minha!</button>
                 <button className="btn" onClick={() => { move([job.id], 'descartada', 'Vaga descartada'); setOpen(null); }}>Descartar</button>
               </>
             ) : (

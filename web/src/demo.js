@@ -65,7 +65,7 @@ export async function demoApi(path, { method = 'GET', body } = {}) {
 
   if (p === '/stats') {
     const count = (list) => list.reduce((acc, x) => ({ ...acc, [x.status]: (acc[x.status] || 0) + 1 }), {});
-    return { jobs: count(jobs), applications: count(apps), novas24h: jobs.length, lastCollect, collecting, roboLastSeen: now(), roboStatus: { estado: 'esperando' }, robo: { ligado: true, ensaio: false, limiteDia: 20, horaInicio: 8, horaFim: 22 }, aplicadasHoje: apps.filter((x) => x.status === 'aplicada').length, pedidos: pedidos.filter((x) => x.status === 'pendente').length };
+    return { jobs: count(jobs), applications: count(apps), novas24h: jobs.length, novasVisiveis: jobs.filter((j) => j.status === 'nova' && !j.block && j.score >= (profile.preferencias.notaMinimaFeed || 0)).length, lastCollect, collecting, roboLastSeen: now(), roboStatus: { estado: 'esperando' }, robo: { ligado: true, ensaio: false, limiteDia: 20, horaInicio: 8, horaFim: 22 }, aplicadasHoje: apps.filter((x) => x.status === 'aplicada').length, pedidos: pedidos.filter((x) => x.status === 'pendente').length };
   }
 
   if (p === '/jobs' && method === 'GET') {
@@ -81,13 +81,10 @@ export async function demoApi(path, { method = 'GET', body } = {}) {
   }
   if ((m = p.match(/^\/jobs\/(\d+)$/))) return jobs.find((j) => j.id === Number(m[1])) || fail(404, 'Vaga não encontrada.');
   if (p === '/jobs/status') {
-    for (const j of jobs) if (body.ids.includes(j.id) && j.status !== 'minha') {
-      j.status = body.status;
-      if (body.status === 'triagem') j.triagePos = ++triagePos;
-    }
+    for (const j of jobs) if (body.ids.includes(j.id) && j.status !== 'minha') { j.status = body.status === 'triagem' ? 'nova' : body.status; j.triagePos = 0; }
     return ok();
   }
-  if (p === '/triagem') return jobs.filter((j) => j.status === 'triagem').sort((a, b) => a.triagePos - b.triagePos);
+  if (p === '/triagem') return jobs.filter((j) => j.status === 'nova' && !j.block && j.score >= (profile.preferencias.notaMinimaFeed || 0)).sort((a, b) => (a.triagePos || 0) - (b.triagePos || 0) || b.score - a.score);
   if ((m = p.match(/^\/triagem\/(\d+)\/depois$/))) { const j = jobs.find((x) => x.id === Number(m[1])); j.triagePos = ++triagePos; return ok(); }
   if ((m = p.match(/^\/jobs\/(\d+)\/minha$/))) {
     const j = jobs.find((x) => x.id === Number(m[1]));
@@ -103,7 +100,7 @@ export async function demoApi(path, { method = 'GET', body } = {}) {
     const a = apps.find((x) => x.jobId === id);
     if (a && a.status !== 'aguardando') fail(409, 'O robô já começou essa candidatura.');
     apps = apps.filter((x) => x.jobId !== id);
-    jobs.find((x) => x.id === id).status = 'triagem';
+    jobs.find((x) => x.id === id).status = 'nova';
     return ok();
   }
 

@@ -41,7 +41,7 @@ export default function Reels({ onChange, go }) {
         } else if (kind === 'no') {
           await api('/jobs/status', { method: 'POST', body: { ids: [current.id], status: 'descartada' } });
           toast('Descartada', async () => {
-            await api('/jobs/status', { method: 'POST', body: { ids: [current.id], status: 'triagem' } });
+            await api('/jobs/status', { method: 'POST', body: { ids: [current.id], status: 'nova' } });
             setItems((l) => [current, ...l]);
             setDone((d) => d - 1);
             onChange();
@@ -107,7 +107,7 @@ export default function Reels({ onChange, go }) {
       <div className="reels">
         <div className="reels-top">
           <h1>Triagem</h1>
-          <span className="muted small">{items.length ? `${items.length} na fila` : ''}</span>
+          <span className="muted small">{items.length ? `${items.length} nova${items.length > 1 ? 's' : ''}` : ''}</span>
         </div>
         {total > 0 && total <= 40 && (
           <div className="progress">{Array.from({ length: total }, (_, i) => <i key={i} className={i < done ? 'done' : ''} />)}</div>
@@ -116,7 +116,7 @@ export default function Reels({ onChange, go }) {
         {!job ? (
           <div className="empty" style={{ margin: 'auto' }}>
             <h2>{done ? 'Triagem em dia' : 'Nada para triar'}</h2>
-            <div>{done ? `Você decidiu ${done} vaga${done === 1 ? '' : 's'}. As que forem suas já estão na fila do robô.` : 'Mande vagas do feed para cá com o botão +.'}</div>
+            <div>{done ? `Você decidiu ${done} vaga${done === 1 ? '' : 's'}. As que forem suas já estão na fila do robô.` : 'Nenhuma vaga nova agora. Na lista, toque em Buscar agora.'}</div>
             <button className="btn primary" onClick={() => go(done ? 'fila' : 'vagas')}>{done ? 'Ver fila de aplicação' : 'Ir para as vagas'}</button>
           </div>
         ) : (

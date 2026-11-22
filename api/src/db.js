@@ -24,7 +24,7 @@ create table if not exists kv (
   value jsonb not null
 );
 
--- Vaga. status: nova (feed) · triagem (fila do modo Reels) · descartada · minha (foi para a fila de aplicação)
+-- Vaga. status: nova (lista e Reels) · descartada · minha (foi para a fila de aplicação)
 create table if not exists jobs (
   id serial primary key,
   dedupe_key text unique not null,
@@ -74,6 +74,9 @@ create table if not exists requests (
   done_at timestamptz
 );
 create index if not exists requests_status_idx on requests(status);
+
+-- Triagem e lista mostram as mesmas vagas novas: o status antigo 'triagem' virou 'nova'
+update jobs set status = 'nova', triage_pos = null where status = 'triagem';
 
 create table if not exists collector_runs (
   id serial primary key,

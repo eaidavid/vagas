@@ -57,10 +57,13 @@ export function registerRoutes(app) {
     const { rows: js } = await q('select status, count(*)::int n from jobs group by status');
     const { rows: as } = await q('select status, count(*)::int n from applications group by status');
     const { rows: today } = await q("select count(*)::int n from jobs where created_at > now() - interval '24 hours'");
+    const minFeed = (await getProfile()).preferencias.notaMinimaFeed || 0;
+    const { rows: vis } = await q("select count(*)::int n from jobs where status = 'nova' and score >= $1 and (data->>'block') is null", [minFeed]);
     return {
       jobs: Object.fromEntries(js.map((r) => [r.status, r.n])),
       applications: Object.fromEntries(as.map((r) => [r.status, r.n])),
       novas24h: today[0].n,
+      novasVisiveis: vis[0].n, // o que aparece na lista e no Reels (sem as barradas pela nota)
       lastCollect: await kvGet('lastCollect'),
       collecting: isRunning(),
       roboLastSeen: await kvGet('roboLastSeen'),
@@ -77,7 +80,7 @@ export function registerRoutes(app) {
     // Feed normal usa a nota mínima do perfil; "mostrar todas" e as outras abas não filtram por nota
     const minScore = min != null ? Number(min) || 0 : status === 'nova' && blocked !== '1' ? (await getProfile()).preferencias.notaMinimaFeed || 0 : 0;
     const where = ['status = $1', 'score >= $2'];
-    const params = [status, minScore];
+    const params = [status === 'triagem' ? 'nova' : status, minScore];
     if (text) { params.push(`%${text}%`); where.push(`(data->>'title' ilike $${params.length} or data->>'company' ilike $${params.length})`); }
     if (ats) { params.push(ats); where.push(`ats = $${params.length}`); }
     if (workplace) { params.push(workplace); where.push(`data->>'workplace' = $${params.length}`); }
@@ -94,25 +97,23 @@ export function registerRoutes(app) {
     return full(rows[0]);
   });
 
-  /* Mudar status: nova · triagem · descartada */
+  /* Mudar status: nova · descartada ('triagem' é aceito e vira 'nova': lista e Reels mostram as mesmas vagas) */
   app.post('/api/jobs/status', async (req, reply) => {
-    const { ids = [], status } = req.body || {};
-    if (!['nova', 'triagem', 'descartada'].includes(status)) return reply.code(400).send({ error: 'Status inválido.' });
-    await q(
-      `update jobs set status = $2, triage_pos = case when $2 = 'triagem' then extract(epoch from now()) + id / 1e6 else triage_pos end, updated_at = now()
-       where id = any($1::int[]) and status <> 'minha'`,
-      [ids.map(Number), status],
-    );
+    const { ids = [], status: raw } = req.body || {};
+    const status = raw === 'triagem' ? 'nova' : raw;
+    if (!['nova', 'descartada'].includes(status)) return reply.code(400).send({ error: 'Status inválido.' });
+    await q("update jobs set status = $2, triage_pos = null, updated_at = now() where id = any($1::int[]) and status <> 'minha'", [ids.map(Number), status]);
     return { ok: true };
   });
 
-  /* Modo Reels */
+  /* Modo Reels: as mesmas vagas novas da lista, melhores primeiro; "Depois" manda para o fim */
   app.get('/api/triagem', async () => {
-    const { rows } = await q("select * from jobs where status = 'triagem' order by triage_pos asc nulls last, id limit 100");
+    const min = (await getProfile()).preferencias.notaMinimaFeed || 0;
+    const { rows } = await q("select * from jobs where status = 'nova' and score >= $1 and (data->>'block') is null order by triage_pos asc nulls first, score desc, created_at desc limit 100", [min]);
     return rows.map(full);
   });
   app.post('/api/triagem/:id/depois', async (req) => {
-    await q("update jobs set triage_pos = (select coalesce(max(triage_pos), 0) + 1 from jobs where status = 'triagem') where id = $1", [req.params.id]);
+    await q('update jobs set triage_pos = extract(epoch from now()) where id = $1', [req.params.id]);
     return { ok: true };
   });
   app.post('/api/jobs/:id/minha', async (req) => {
@@ -124,7 +125,7 @@ export function registerRoutes(app) {
     const id = Number(req.params.id);
     const { rowCount } = await q("delete from applications where job_id = $1 and status = 'aguardando'", [id]);
     if (!rowCount) return reply.code(409).send({ error: 'O robô já começou essa candidatura.' });
-    await q("update jobs set status = 'triagem', updated_at = now() where id = $1", [id]);
+    await q("update jobs set status = 'nova', updated_at = now() where id = $1", [id]);
     return { ok: true };
   });
 

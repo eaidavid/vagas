@@ -43,7 +43,7 @@ export default function App() {
   if (!me) return <Login onLogin={setMe} />;
 
   const go = (id) => { location.hash = `#${id}`; setTab(id); };
-  const triagem = stats?.jobs?.triagem || 0;
+  const novas = stats?.novasVisiveis ?? 0;
   const need = stats?.applications?.precisa_voce || 0;
 
   return (
@@ -62,7 +62,7 @@ export default function App() {
           <button key={t.id} className={tab === t.id ? 'on' : ''} onClick={() => go(t.id)}>
             {t.icon()}
             {t.label}
-            {t.id === 'reels' && triagem > 0 && <span className="badge">{triagem}</span>}
+            {t.id === 'reels' && novas > 0 && <span className="badge">{novas > 99 ? '99+' : novas}</span>}
             {t.id === 'fila' && need > 0 && <span className="badge bad">{need}</span>}
           </button>
         ))}

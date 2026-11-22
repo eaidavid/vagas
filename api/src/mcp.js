@@ -67,9 +67,9 @@ function buildServer() {
   });
 
   server.registerTool('buscar_vagas', {
-    description: 'Lista vagas. status: nova (feed), triagem (fila de decisão), minha (foi para a fila de aplicação), descartada. Ordenadas pela nota de compatibilidade.',
+    description: 'Lista vagas. status: nova (ainda não decididas), minha (foi para a fila de aplicação), descartada. Ordenadas pela nota de compatibilidade.',
     inputSchema: {
-      status: z.enum(['nova', 'triagem', 'minha', 'descartada']).optional(),
+      status: z.enum(['nova', 'minha', 'descartada']).optional(),
       busca: z.string().optional().describe('Parte do cargo ou da empresa'),
       nota_minima: z.number().int().min(0).max(100).optional(),
       incluir_barradas: z.boolean().optional().describe('Inclui as que a nota barrou (nível, local, salário, área)'),
@@ -116,12 +116,10 @@ function buildServer() {
   });
 
   server.registerTool('mover_vagas', {
-    description: 'Muda o status de vagas: "triagem" (manda para ele decidir), "descartada" ou "nova". Use quando ele pedir para triar por ele. Não use "minha": quem decide aplicar é ele (ou peça confirmação e use marcar_minha).',
-    inputSchema: { ids: z.array(z.number().int()).min(1), status: z.enum(['triagem', 'descartada', 'nova']) },
+    description: 'Descarta vagas ("descartada") ou devolve para as novas ("nova"). Use quando ele pedir para limpar/triar por ele. Para aplicar, use marcar_minha (só quando ele pedir).',
+    inputSchema: { ids: z.array(z.number().int()).min(1), status: z.enum(['descartada', 'nova']) },
   }, async ({ ids, status }) => {
-    const { rowCount } = await q(
-      `update jobs set status = $2, triage_pos = case when $2 = 'triagem' then extract(epoch from now()) + id / 1e6 else triage_pos end, updated_at = now()
-       where id = any($1::int[]) and status <> 'minha'`, [ids, status]);
+    const { rowCount } = await q("update jobs set status = $2, triage_pos = null, updated_at = now() where id = any($1::int[]) and status <> 'minha'", [ids, status]);
     return text(`${rowCount} vaga(s) movida(s) para ${status}.`);
   });
 
