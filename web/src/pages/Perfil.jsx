@@ -3,7 +3,7 @@ import { api, ago } from '../api.js';
 import { Icon, Toggle, toast } from '../components/ui.jsx';
 
 const TELA = '/tela/vnc.html?path=tela/websockify&autoconnect=1&resize=scale';
-const SRC = { linkedin: 'LinkedIn', gupy: 'Gupy', greenhouse: 'Greenhouse', lever: 'Lever' };
+const SRC = { linkedin: 'LinkedIn', gupy: 'Gupy', remotar: 'Remotar', programathor: 'Programathor', github: 'GitHub (comunidade)', greenhouse: 'Greenhouse', lever: 'Lever' };
 const lines = (arr) => (arr || []).join('\n');
 const fromLines = (s) => s.split(/\n|,/).map((x) => x.trim()).filter(Boolean);
 

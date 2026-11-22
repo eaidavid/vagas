@@ -26,6 +26,9 @@ habilidades do currículo citadas na vaga e data de publicação. Vaga que fere 
 ### Fontes
 - **LinkedIn:** páginas públicas de busca, sem login. Lê se a vaga é Candidatura simplificada ou se leva para outro site.
 - **Gupy:** API pública do portal.
+- **Remotar:** API aberta, só vagas remotas no Brasil (as ~500 mais recentes).
+- **Programathor:** vagas de tecnologia (as 4 páginas mais recentes).
+- **GitHub (comunidade):** issues abertas de `frontendbr/vagas`, `react-brasil/vagas` e `backend-br/vagas` (últimos 30 dias). Muitas são por e-mail: o robô avisa e mostra o endereço.
 - **Greenhouse / Lever:** quadros de vagas das empresas listadas no Perfil.
 
 Vagas repetidas entre fontes (mesma empresa e cargo, ou mesmo link de candidatura) viram uma só.

@@ -17,6 +17,9 @@ const RULES = [
   [/(^|\.)99jobs\.com$/, '99jobs'],
   [/(^|\.)abler\.com\.br$/, 'abler'],
   [/(^|\.)linkedin\.com$/, 'linkedin'],
+  [/(^|\.)programathor\.com\.br$/, 'programathor'],
+  [/(^|\.)remotar\.com\.br$/, 'remotar'],
+  [/(^|\.)github\.com$/, 'github'],
 ];
 
 export const ATS_INFO = {
@@ -37,6 +40,10 @@ export const ATS_INFO = {
   abler: { nome: 'Abler', robo: 'tentativa' },
   linkedin: { nome: 'LinkedIn', robo: 'tentativa' },
   linkedin_externo: { nome: 'Site externo (via LinkedIn)', robo: 'tentativa' },
+  programathor: { nome: 'Programathor', robo: 'tentativa' },
+  remotar: { nome: 'Remotar', robo: 'tentativa' },
+  github: { nome: 'GitHub (comunidade)', robo: 'manual' },
+  email: { nome: 'Candidatura por e-mail', robo: 'manual' },
   site: { nome: 'Site da empresa', robo: 'tentativa' },
   desconhecido: { nome: 'A descobrir', robo: 'tentativa' },
 };

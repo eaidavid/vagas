@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { ClaudeBox, Icon, JobTags, Logo, Reasons, Score, askClaude } from '../components/ui.jsx';
 
-const SOURCE = { linkedin: 'LinkedIn', gupy: 'Gupy', greenhouse: 'Greenhouse', lever: 'Lever' };
+const SOURCE = { linkedin: 'LinkedIn', gupy: 'Gupy', remotar: 'Remotar', programathor: 'Programathor', github: 'GitHub', greenhouse: 'Greenhouse', lever: 'Lever' };
 
 export default function JobSheet({ id, onClose, actions }) {
   const [job, setJob] = useState(null);

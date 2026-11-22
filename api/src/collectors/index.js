@@ -7,6 +7,7 @@ import { htmlToText } from './http.js';
 import { collectLinkedin } from './linkedin.js';
 import { collectGupy } from './gupy.js';
 import { collectGreenhouse, collectLever } from './boards.js';
+import { collectRemotar, collectProgramathor, collectGithub } from './extras.js';
 
 const activity = [];
 export const recentActivity = () => activity.slice(-80);
@@ -29,6 +30,7 @@ function inferWorkplace(job) {
 }
 
 function resolveAts(job) {
+  if (job.applyMode === 'email') return 'email';
   if (job.source === 'linkedin') {
     if (job.applyMode === 'easy') return 'linkedin_easy';
     if (job.applyUrl) return detectAts(job.applyUrl);
@@ -105,6 +107,9 @@ export async function runCollectors(only = null) {
   const sources = [
     ['linkedin', (emit) => collectLinkedin({ termos: prefs.termos, cidades: prefs.cidadesPresencial }, { prefilter, known, log, emit })],
     ['gupy', (emit) => collectGupy({ termos: prefs.termos }, { log, emit })],
+    ['remotar', (emit) => collectRemotar({ termos: prefs.termos }, { log, emit })],
+    ['programathor', (emit) => collectProgramathor({}, { log, emit, prefilter })],
+    ['github', (emit) => collectGithub({}, { log, emit })],
     ['greenhouse', (emit) => (profile.empresas.greenhouse.length ? collectGreenhouse(profile.empresas.greenhouse, { log, emit }) : 0)],
     ['lever', (emit) => (profile.empresas.lever.length ? collectLever(profile.empresas.lever, { log, emit }) : 0)],
   ].filter(([name]) => !only || only === name);

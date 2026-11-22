@@ -91,3 +91,32 @@ test('Nota: mid-level conta como pleno e .NET/Java no título como outra stack',
   assert.ok(net.reasons.some((r) => /\.net/.test(r.text)));
   assert.ok(!js.reasons.some((r) => /Stack principal/.test(r.text)));
 });
+
+test('Nota: anos de experiência pedidos e cargos de liderança', () => {
+  const tres = scoreJob({ title: 'Desenvolvedor Full Stack', location: 'Brasil', workplace: 'remoto', description: 'Requisitos: 3 anos de experiência com React' }, prefs);
+  const cinco = scoreJob({ title: 'Python Developer', location: 'Brasil', workplace: 'remoto', description: '5+ years of experience' }, prefs);
+  const um = scoreJob({ title: 'Desenvolvedor Front-end', location: 'Brasil', workplace: 'remoto', description: 'Experiência de 1 ano de experiência com HTML e CSS' }, prefs);
+  const leader = scoreJob({ title: 'Squad Leader', location: 'Brasil', workplace: 'remoto', description: '' }, prefs);
+  assert.ok(tres.reasons.some((r) => /3\+ anos/.test(r.text)));
+  assert.equal(cinco.block, 'nivel');
+  assert.ok(um.reasons.some((r) => /até 1 ano/.test(r.text)));
+  assert.ok(leader.score <= 25);
+});
+
+test('GitHub (frontendbr/vagas): issue vira vaga, com local, formato, nível e como se candidatar', async () => {
+  const { mapGithubIssue } = await import('../src/collectors/extras.js');
+  const issue = {
+    number: 9123, title: '[Remoto] Desenvolvedor Front-end Júnior na Acme', html_url: 'https://github.com/frontendbr/vagas/issues/9123',
+    created_at: '2026-11-20T12:00:00Z', labels: [{ name: 'Remoto' }, { name: 'Júnior' }, { name: 'CLT' }],
+    body: '## Descrição da vaga\nReact e TypeScript.\n\n## Como se candidatar\nEnvie seu currículo para vagas@acme.com.br',
+  };
+  const j = mapGithubIssue(issue, 'frontendbr/vagas');
+  assert.equal(j.title, 'Desenvolvedor Front-end Júnior na Acme');
+  assert.equal(j.company, 'Acme');
+  assert.equal(j.workplace, 'remoto');
+  assert.equal(j.employmentType, 'Júnior · CLT');
+  assert.equal(j.applyMode, 'email');
+  assert.equal(j.applyEmail, 'vagas@acme.com.br');
+  const comLink = mapGithubIssue({ ...issue, body: '## Como se candidatar\nhttps://acme.gupy.io/jobs/1' }, 'frontendbr/vagas');
+  assert.equal(comLink.applyUrl, 'https://acme.gupy.io/jobs/1');
+});

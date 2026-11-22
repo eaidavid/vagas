@@ -10,7 +10,7 @@ export const norm = (s = '') =>
 const has = (text, re) => re.test(text);
 
 const AREA = /\b(desenvolvedor|desenvolvedora|developer|dev|programador|programadora|front[\s-]?end|frontend|full[\s-]?stack|fullstack|react|javascript|typescript|node|software engineer|software developer|engenheir[oa] de software|desenvolvimento de software|analista de desenvolvimento|analista desenvolvedor|web developer|desenvolvimento web|ui engineer|ui developer)\b/;
-const LEVEL_UP = /\b(senior|sr\.?|pleno|pl\.?|mid[\s-]?level|mid|intermediate|especialista|specialist|lead|lider|tech lead|staff|principal|gerente|manager|coordenador|coordenadora|head|arquitet[oa]|architect|iii|ii)\b/;
+const LEVEL_UP = /\b(senior|sr\.?|pleno|pl\.?|mid[\s-]?level|mid|intermediate|especialista|specialist|lead|leader|lider|lideranca|tech lead|staff|principal|gerente|manager|coordenador|coordenadora|head|arquitet[oa]|architect|iii|ii)\b/;
 const LEVEL_OK = /\b(junior|jr\.?|estagio|estagiari[oa]|trainee|aprendiz|iniciante|entry|intern|internship|primeiro emprego)\b/;
 const INTERN = /\b(estagio|estagiari[oa]|intern|internship)\b/;
 const OTHER_AREA = /\b(vendas|vendedor|comercial|suporte|help ?desk|motorista|atendente|financeiro|contabil|marketing|analytics|seo|growth|trafego|social media|recepcionista|auxiliar administrativo|enfermeir|professor|analista de dados|cientista de dados|qa manual)\b/;
@@ -77,7 +77,7 @@ export function scoreJob(job, prefs) {
   // Área
   if (has(title, AREA)) plus(10, 'Vaga de desenvolvimento');
   else if (has(title, OTHER_AREA)) { minus(40, 'Fora da área de desenvolvimento'); block = 'area'; }
-  else minus(20, 'Título não parece de desenvolvimento');
+  else minus(30, 'Título não parece de desenvolvimento');
 
   const otherStack = title.match(OTHER_STACK);
   if (otherStack) minus(18, `Stack principal fora do seu currículo (${otherStack[1]})`);
@@ -100,6 +100,15 @@ export function scoreJob(job, prefs) {
     else { minus(40, `${wp === 'hibrido' ? 'Híbrido' : 'Presencial'} fora da sua região`); block = block || 'local'; }
   } else if (nearby) plus(8, 'Na sua região');
   else if (has(norm(job.location), /remot|home ?office|anywhere|brasil$/)) plus(6, 'Parece remoto');
+
+  // Anos de experiência pedidos na descrição ("3 anos de experiência", "5+ years of experience")
+  const yrs = [...desc.matchAll(/(?:minimo de |pelo menos |at least )?(\d{1,2})\s*\+?\s*(?:a\s*\d+\s*)?(?:anos?|years?)\s*(?:de |of )?(?:experiencia|experience|atuacao|vivencia)/g)].map((m) => Number(m[1])).filter((n) => n > 0 && n < 20);
+  if (yrs.length) {
+    const y = Math.min(...yrs);
+    if (y >= 3) { minus(25, `Pede ${y}+ anos de experiência`); if (y >= 5) block = block || 'nivel'; }
+    else if (y === 2) minus(8, 'Pede 2 anos de experiência');
+    else plus(5, 'Pede até 1 ano de experiência');
+  }
 
   // Fora do Brasil (comum nos quadros Greenhouse/Lever: "Remote, United States")
   const locN = norm(job.location);

@@ -76,6 +76,10 @@ export async function applyJob(context, { job, profile, resumePath, ensaio, cont
   };
 
   try {
+    // Vaga por e-mail (comum nas vagas da comunidade no GitHub): o robô não manda e-mail
+    if (ats === 'email' || (ats === 'github' && /github\.com/.test(d.applyUrl || d.url))) {
+      return await done('precisa_voce', 'Candidatura por e-mail', { error: d.applyEmail ? `Essa vaga pede candidatura por e-mail: ${d.applyEmail}. Envie seu currículo para esse endereço (dica: peça ao Claude para escrever o e-mail) e toque em Apliquei.` : 'Essa vaga não tem formulário: veja em "Abrir vaga" como se candidatar e toque em Apliquei.' });
+    }
     let url = d.applyUrl || d.url;
     if (ats === 'lever' && !/\/apply\/?$/.test(url)) url = url.replace(/\/?$/, '/apply');
     if (ats.startsWith('linkedin')) url = d.url;
@@ -144,6 +148,11 @@ export async function applyJob(context, { job, profile, resumePath, ensaio, cont
           if (stop) return await stop;
         }
       }
+    }
+
+    // Qualquer outro site que peça login (Programathor, Remotar, sites de empresas)
+    if (!ats.startsWith('linkedin') && ats !== 'gupy' && (await page.locator('input[type=password]').filter({ visible: true }).count())) {
+      return await done('precisa_voce', 'O site pediu login', { error: `O site ${new URL(page.url()).hostname.replace(/^www\./, '')} pediu login. Entre uma vez pela tela do robô (Perfil → Robô → Tela do robô) e toque em Tentar de novo.` });
     }
 
     /* Etapas */
