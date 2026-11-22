@@ -199,6 +199,20 @@ export default function Perfil({ onChange }) {
           )}
 
           <section className="panel">
+            <h2>Áreas de vaga</h2>
+            <div className="muted small" style={{ marginTop: 6 }}>Vagas de entrada em tecnologia: onde o que você já sabe (front-end, design, lógica, banco de dados) conta mais do que anos de prática. Desligue o que não quiser ver.</div>
+            {(p.areasDisponiveis || []).map((a) => {
+              const on = (pr.areas || []).includes(a.id);
+              return (
+                <div key={a.id} className="switch">
+                  <span>{a.nome}</span>
+                  <Toggle on={on} onChange={(v) => setPref({ areas: v ? [...(pr.areas || []), a.id] : (pr.areas || []).filter((x) => x !== a.id) })} />
+                </div>
+              );
+            })}
+          </section>
+
+          <section className="panel">
             <h2>O que buscar</h2>
             <label className="label">Termos de busca (um por linha)</label>
             <textarea className="textarea" value={lines(pr.termos)} onChange={(e) => setPref({ termos: fromLines(e.target.value) })} />
@@ -210,12 +224,16 @@ export default function Perfil({ onChange }) {
                 <input className="input" type="number" value={pr.salarioMinimo} onChange={(e) => setPref({ salarioMinimo: Number(e.target.value) || 0 })} />
               </div>
               <div>
+                <label className="label">"Paga bem" a partir de (R$)</label>
+                <input className="input" type="number" value={pr.salarioBom || 3000} onChange={(e) => setPref({ salarioBom: Number(e.target.value) || 0 })} />
+              </div>
+              <div>
                 <label className="label">Nota mínima para o feed</label>
                 <input className="input" type="number" min="0" max="100" value={pr.notaMinimaFeed} onChange={(e) => setPref({ notaMinimaFeed: Number(e.target.value) || 0 })} />
               </div>
             </div>
             <div style={{ marginTop: 10 }}>
-              {[['aceitaRemoto', 'Remoto (de qualquer lugar)'], ['aceitaHibrido', 'Híbrido (nas cidades acima)'], ['aceitaPresencial', 'Presencial (nas cidades acima)'], ['aceitaEstagio', 'Incluir estágio']].map(([k, label]) => (
+              {[['aceitaRemoto', 'Remoto (de qualquer lugar)'], ['aceitaHibrido', 'Híbrido (nas cidades acima)'], ['aceitaPresencial', 'Presencial (nas cidades acima)'], ['aceitaEstagio', 'Incluir estágio'], ['pcd', 'Sou pessoa com deficiência (mostrar vagas exclusivas PcD)']].map(([k, label]) => (
                 <div key={k} className="switch"><span>{label}</span><Toggle on={!!pr[k]} onChange={(v) => setPref({ [k]: v })} /></div>
               ))}
             </div>

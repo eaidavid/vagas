@@ -14,7 +14,7 @@ import { ATS_INFO } from './ats.js';
 const text = (v) => ({ content: [{ type: 'text', text: typeof v === 'string' ? v : JSON.stringify(v, null, 2) }] });
 const fail = (m) => ({ content: [{ type: 'text', text: m }], isError: true });
 
-const INSTRUCTIONS = `Vagas: sistema pessoal de candidatura do David (dev front-end júnior, estudante de ADS, Aparecida de Goiânia/GO).
+const INSTRUCTIONS = `Vagas: sistema pessoal de candidatura do David (estudante de ADS, início de carreira em tecnologia, base em front-end e design, Aparecida de Goiânia/GO). Ele busca vagas de ENTRADA em tecnologia que paguem bem (suporte, QA, UI/UX, implantação, CS, dev júnior), porque as de dev júnior costumam pedir experiência prática que ele ainda não tem.
 Regras ao escrever por ele (cartas, respostas de formulário):
 - Português do Brasil (ou inglês, se a vaga for em inglês), primeira pessoa, tom direto e humano, sem frases de efeito nem cara de texto de IA.
 - NUNCA invente experiência, empresa, tempo de casa, certificação, nota ou nível de idioma. Use só o que está em ver_perfil. Se a pergunta exige algo que ele não tem, responda com honestidade e mostre vontade de aprender.

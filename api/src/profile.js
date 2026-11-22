@@ -1,8 +1,13 @@
 // Perfil do candidato: dados do currículo, preferências de busca e banco de respostas
 // que o robô usa nos formulários. Tudo editável na tela Perfil; isto é só o ponto de partida.
 import { kvGet, kvSet } from './db.js';
+import { AREAS_PADRAO } from './scoring.js';
+
+// Termos da primeira versão (só dev). Se o perfil salvo ainda estiver com eles, troca pelos novos.
+const TERMOS_V1 = ['desenvolvedor front-end júnior', 'desenvolvedor júnior', 'programador júnior', 'desenvolvedor react', 'estágio desenvolvimento', 'desenvolvedor web'];
 
 export const DEFAULT_PROFILE = {
+  versao: 2,
   nome: 'David Alves Cavalcante',
   titulo: 'Desenvolvedor Front-end | Estudante de ADS | Designer Gráfico',
   email: process.env.ADMIN_EMAIL || '',
@@ -23,14 +28,23 @@ export const DEFAULT_PROFILE = {
 
   preferencias: {
     // O que buscar nos sites (cada termo vira uma busca)
-    termos: ['desenvolvedor front-end júnior', 'desenvolvedor júnior', 'programador júnior', 'desenvolvedor react', 'estágio desenvolvimento', 'desenvolvedor web'],
+    // Vagas de entrada em tecnologia: onde o que você já sabe conta mais que anos de prática
+    termos: [
+      'suporte técnico', 'analista de suporte júnior', 'help desk', 'analista de testes júnior', 'QA júnior',
+      'UI UX designer júnior', 'web designer', 'analista de implantação', 'analista de sistemas júnior',
+      'estágio TI', 'trainee tecnologia', 'desenvolvedor front-end júnior',
+    ],
+    areas: AREAS_PADRAO,
     // Remoto: aceita de qualquer lugar. Híbrido/presencial: só nestas cidades
     cidadesPresencial: ['Goiânia', 'Aparecida de Goiânia', 'Senador Canedo', 'Trindade', 'Goianira'],
     aceitaRemoto: true,
     aceitaHibrido: true,
     aceitaPresencial: true,
     salarioMinimo: 2000,
+    salarioBom: 3000, // a partir disso a vaga ganha "Paga bem"
     aceitaEstagio: true,
+    pcd: false, // mostra vagas exclusivas para PcD só se ligado
+    idiomas: ['Português', 'Inglês básico'],
     notaMinimaFeed: 40,
   },
 
@@ -53,6 +67,15 @@ export const DEFAULT_PROFILE = {
 export async function getProfile() {
   const saved = await kvGet('profile');
   if (!saved) return structuredClone(DEFAULT_PROFILE);
+  // Atualização do perfil para vagas de entrada (só se os termos ainda forem os originais)
+  if (!saved.versao || saved.versao < 2) {
+    const t = saved.preferencias?.termos;
+    if (!t || (t.length === TERMOS_V1.length && t.every((x, i) => x === TERMOS_V1[i]))) {
+      saved.preferencias = { ...saved.preferencias, termos: DEFAULT_PROFILE.preferencias.termos, areas: AREAS_PADRAO };
+    }
+    saved.versao = 2;
+    await kvSet('profile', saved);
+  }
   return {
     ...DEFAULT_PROFILE,
     ...saved,

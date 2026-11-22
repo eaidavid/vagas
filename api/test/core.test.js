@@ -120,3 +120,31 @@ test('GitHub (frontendbr/vagas): issue vira vaga, com local, formato, nível e c
   const comLink = mapGithubIssue({ ...issue, body: '## Como se candidatar\nhttps://acme.gupy.io/jobs/1' }, 'frontendbr/vagas');
   assert.equal(comLink.applyUrl, 'https://acme.gupy.io/jobs/1');
 });
+
+test('Áreas de entrada: suporte, QA e UI/UX sobem; "sem experiência" e "paga bem" ajudam; área desligada some', () => {
+  const sup = scoreJob({ title: 'Analista de Suporte Técnico N1', location: 'Goiânia, GO', workplace: 'presencial', description: 'Não é necessária experiência, oferecemos treinamento completo.' }, prefs);
+  const qa = scoreJob({ title: 'Analista de Testes Júnior', location: 'Brasil', workplace: 'remoto', description: 'Conhecimento em SQL e lógica de programação' }, prefs);
+  const ux = scoreJob({ title: 'UI/UX Designer Júnior', location: 'Brasil', workplace: 'remoto', description: 'Figma, design system', salaryText: 'R$ 3.500,00' }, prefs);
+  const dados = scoreJob({ title: 'Analista de Dados Júnior', location: 'Brasil', workplace: 'remoto', description: '' }, prefs);
+  const devJr = scoreJob({ title: 'Desenvolvedor Júnior', location: 'Brasil', workplace: 'remoto', description: '' }, prefs);
+  assert.ok(sup.reasons.some((r) => /Suporte técnico/.test(r.text)) && sup.reasons.some((r) => /começando/.test(r.text)));
+  assert.ok(sup.score >= 85, `suporte ${sup.score}`);
+  assert.ok(qa.score >= 80, `qa ${qa.score}`);
+  assert.ok(ux.reasons.some((r) => /Paga bem/.test(r.text)));
+  assert.equal(dados.block, 'area'); // "Dados" vem desligado por padrão
+  assert.ok(sup.score > devJr.score, 'entrada em suporte deve vir antes de dev júnior genérico');
+  const comDados = scoreJob({ title: 'Analista de Dados Júnior', location: 'Brasil', workplace: 'remoto', description: '' }, { ...prefs, areas: [...prefs.areas, 'dados'] });
+  assert.equal(comDados.block, null);
+});
+
+test('Vagas exclusivas PcD, idioma que você não tem e títulos fora de TI ficam escondidos', () => {
+  const pcd = scoreJob({ title: 'Analista de Testes e QA Júnior - Exclusiva PCD', location: 'Brasil', workplace: 'remoto', description: '' }, prefs);
+  const esp = scoreJob({ title: 'Assistente de Suporte N1 - Espanhol', location: 'Brasil', workplace: 'remoto', description: '' }, prefs);
+  const fora = scoreJob({ title: 'Analista de Logística', location: 'Brasil', workplace: 'remoto', description: 'Excel' }, prefs);
+  const ti = scoreJob({ title: 'Estágio em Governança de TI', location: 'Brasil', workplace: 'remoto', description: '' }, prefs);
+  assert.equal(pcd.block, 'perfil');
+  assert.equal(esp.block, 'perfil');
+  assert.equal(fora.block, 'area');
+  assert.equal(ti.block, null);
+  assert.equal(scoreJob({ title: 'Analista de Testes - Exclusiva PCD', location: 'Brasil', workplace: 'remoto', description: '' }, { ...prefs, pcd: true }).block, null);
+});

@@ -82,7 +82,7 @@ export async function collectLinkedin({ termos, cidades }, { prefilter, known, l
   let jobs = 0;
   const seen = new Set();
   for (const s of searches) {
-    for (let start = 0; start < 75; start += 25) {
+    for (let start = 0; start < 50; start += 25) {
       const qs = new URLSearchParams({ ...s.params, start: String(start) });
       let cards;
       try {

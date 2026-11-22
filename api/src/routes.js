@@ -7,6 +7,7 @@ import { getProfile, saveProfile } from './profile.js';
 import { runCollectors, isRunning, recentActivity, rescoreAll } from './collectors/index.js';
 import { enqueue, setStatus, claimNext, report } from './queue.js';
 import { ATS_INFO } from './ats.js';
+import { AREAS } from './scoring.js';
 import { SERVICOS, contasPublicas, salvarConta, contasParaRobo } from './contas.js';
 
 const DATA = process.env.DATA_DIR || '/data';
@@ -253,9 +254,9 @@ export function registerRoutes(app) {
   });
 
   /* Perfil */
-  app.get('/api/profile', async () => ({ ...(await getProfile()), temCurriculo: existsSync(CV) }));
+  app.get('/api/profile', async () => ({ ...(await getProfile()), temCurriculo: existsSync(CV), areasDisponiveis: Object.entries(AREAS).map(([id, a]) => ({ id, nome: a.nome })) }));
   app.put('/api/profile', async (req) => {
-    const { temCurriculo, ...p } = req.body || {};
+    const { temCurriculo, areasDisponiveis, ...p } = req.body || {};
     await saveProfile(p);
     const n = await rescoreAll();
     return { ok: true, rescored: n };

@@ -9,7 +9,9 @@ import { migrate } from './db.js';
 import { ensureAdmin, guard, registerAuth } from './auth.js';
 import { registerRoutes } from './routes.js';
 import { registerMcp } from './mcp.js';
-import { startScheduler } from './collectors/index.js';
+import { startScheduler, rescoreAll } from './collectors/index.js';
+import { SCORE_VERSION } from './scoring.js';
+import { kvGet, kvSet } from './db.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const DIST = process.env.WEB_DIST || path.resolve(here, '../../web/dist');
@@ -34,5 +36,10 @@ if (existsSync(DIST)) {
 
 await migrate();
 await ensureAdmin();
+if ((await kvGet('scoreVersion', 0)) !== SCORE_VERSION) {
+  const n = await rescoreAll();
+  await kvSet('scoreVersion', SCORE_VERSION);
+  app.log.info(`Nota recalculada em ${n} vagas (regra v${SCORE_VERSION})`);
+}
 startScheduler();
 await app.listen({ host: '0.0.0.0', port: Number(process.env.PORT) || 3000 });

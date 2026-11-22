@@ -18,7 +18,9 @@ Greenhouse, Lever                       boas para a fila  é sua, esquerda não 
 | **Perfil** | Termos de busca, cidades aceitas para híbrido/presencial, salário mínimo, estágio, currículo em PDF, dados pessoais, banco de respostas do robô, empresas do Greenhouse/Lever, estado das buscas. |
 
 ### Nota de compatibilidade
-Conta local e transparente (`api/src/scoring.js`), sem custo: área de desenvolvimento, nível (júnior/estágio sobe,
+Conta local e transparente (`api/src/scoring.js`), sem custo. Foco em **vagas de entrada em tecnologia** (suporte técnico,
+QA/testes, UI/UX, implantação/sistemas, customer success, dev júnior; dados opcional), ligadas no Perfil. Sobem as que
+aceitam iniciante ("sem experiência", "treinamento") e as que pagam bem (salário ≥ "Paga bem" do Perfil). Também pesam: nível (júnior/estágio sobe,
 pleno/sênior derruba), local (remoto de qualquer lugar; híbrido/presencial só nas cidades do perfil), salário mínimo,
 habilidades do currículo citadas na vaga e data de publicação. Vaga que fere uma regra fica escondida
 (dá para ver em "Mostrar também as que não batem com o perfil").

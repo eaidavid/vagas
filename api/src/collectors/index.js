@@ -51,6 +51,7 @@ export function finalize(raw, prefs) {
   job.block = s.block;
   job.skills = s.skills;
   job.intern = s.intern;
+  job.area = s.area;
   job.score = s.score;
   return job;
 }
@@ -155,7 +156,7 @@ export async function rescoreAll() {
   const { rows } = await q("select id, data from jobs where status in ('nova', 'triagem')");
   for (const r of rows) {
     const s = scoreJob(r.data, profile.preferencias);
-    const data = { ...r.data, reasons: s.reasons, block: s.block, skills: s.skills, intern: s.intern, score: s.score };
+    const data = { ...r.data, reasons: s.reasons, block: s.block, skills: s.skills, intern: s.intern, area: s.area, score: s.score };
     await q('update jobs set score = $2, data = $3 where id = $1', [r.id, s.score, data]);
   }
   return rows.length;
