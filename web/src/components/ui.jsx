@@ -54,6 +54,16 @@ export function Logo({ job, size }) {
   return <div className="logo">{(job.company || '?').trim()[0]?.toUpperCase()}</div>;
 }
 
+/* Chave Lista | Uma por vez (mesmas vagas, dois jeitos de ver) */
+export function ModeSwitch({ mode, setMode }) {
+  return (
+    <div className="mode-switch" role="tablist" aria-label="Modo de ver as vagas">
+      <button role="tab" aria-selected={mode === 'lista'} className={mode === 'lista' ? 'on' : ''} onClick={() => setMode('lista')}>{Icon.list(16)} Lista</button>
+      <button role="tab" aria-selected={mode === 'reels'} className={mode === 'reels' ? 'on' : ''} onClick={() => setMode('reels')}>{Icon.reels(16)} Uma por vez</button>
+    </div>
+  );
+}
+
 export function ClaudeBox({ claude }) {
   if (!claude?.resumo) return null;
   return (

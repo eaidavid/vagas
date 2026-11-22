@@ -13,8 +13,7 @@ Greenhouse, Lever                       boas para a fila  é sua, esquerda não 
 
 | Tela | O que faz |
 |---|---|
-| **Vagas** | Feed ordenado pela nota. `+` manda para a triagem, `✕` descarta (com desfazer). Atalho para mandar todas as melhores de uma vez. |
-| **Triagem** | Uma vaga por tela. Arrastar para a direita ou **É minha!** coloca na fila de aplicação; esquerda descarta; relógio deixa para depois. Teclado: → ← ↓. |
+| **Vagas** | As vagas novas, ordenadas pela nota, em **Lista** ou **Uma por vez** (estilo Reels). `✓ É minha!` manda para o robô, `✕` descarta (com desfazer); no modo uma por vez também dá para arrastar e deixar para depois. |
 | **Fila** | Estado de cada candidatura: na fila, aplicando, precisa de você (com as perguntas que o robô não soube), aplicada, não deu certo. |
 | **Perfil** | Termos de busca, cidades aceitas para híbrido/presencial, salário mínimo, estágio, currículo em PDF, dados pessoais, banco de respostas do robô, empresas do Greenhouse/Lever, estado das buscas. |
 

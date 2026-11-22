@@ -9,24 +9,27 @@ import Perfil from './pages/Perfil.jsx';
 
 const TABS = [
   { id: 'vagas', label: 'Vagas', icon: Icon.list },
-  { id: 'reels', label: 'Triagem', icon: Icon.reels },
   { id: 'fila', label: 'Fila', icon: Icon.queue },
   { id: 'perfil', label: 'Perfil', icon: Icon.user },
 ];
 
-const tabFromHash = () => {
-  const h = location.hash.replace(/^#\/?/, '');
-  return TABS.some((t) => t.id === h) ? h : 'vagas';
+const hash = () => location.hash.replace(/^#\/?/, '');
+const tabFromHash = () => (hash() === 'reels' ? 'vagas' : TABS.some((t) => t.id === hash()) ? hash() : 'vagas');
+const savedMode = () => {
+  if (hash() === 'reels') return 'reels';
+  try { return localStorage.getItem('vagasModo') === 'reels' ? 'reels' : 'lista'; } catch { return 'lista'; }
 };
 
 export default function App() {
   const [me, setMe] = useState(undefined);
   const [tab, setTab] = useState(tabFromHash);
   const [stats, setStats] = useState(null);
+  const [mode, setModeState] = useState(savedMode);
+  const setMode = (m) => { setModeState(m); try { localStorage.setItem('vagasModo', m); } catch { /* ok */ } };
 
   useEffect(() => { api('/me').then(setMe).catch(() => setMe(null)); }, []);
   useEffect(() => {
-    const on = () => setTab(tabFromHash());
+    const on = () => { setTab(tabFromHash()); if (hash() === 'reels') setModeState('reels'); };
     addEventListener('hashchange', on);
     return () => removeEventListener('hashchange', on);
   }, []);
@@ -42,7 +45,11 @@ export default function App() {
   if (me === undefined) return null;
   if (!me) return <Login onLogin={setMe} />;
 
-  const go = (id) => { location.hash = `#${id}`; setTab(id); };
+  const go = (id) => {
+    if (id === 'reels') { setMode('reels'); id = 'vagas'; }
+    location.hash = `#${id}`;
+    setTab(id);
+  };
   const novas = stats?.novasVisiveis ?? 0;
   const need = stats?.applications?.precisa_voce || 0;
 
@@ -53,8 +60,8 @@ export default function App() {
           <b>Demonstração</b> com vagas reais buscadas no LinkedIn. O robô é simulado e nada é salvo.
         </div>
       )}
-      {tab === 'vagas' && <Feed stats={stats} onChange={refreshStats} go={go} />}
-      {tab === 'reels' && <Reels onChange={refreshStats} go={go} />}
+      {tab === 'vagas' && mode === 'lista' && <Feed stats={stats} onChange={refreshStats} go={go} setMode={setMode} />}
+      {tab === 'vagas' && mode === 'reels' && <Reels onChange={refreshStats} go={go} setMode={setMode} />}
       {tab === 'fila' && <Fila onChange={refreshStats} />}
       {tab === 'perfil' && <Perfil stats={stats} onChange={refreshStats} />}
       <nav className="tabs">
@@ -62,7 +69,7 @@ export default function App() {
           <button key={t.id} className={tab === t.id ? 'on' : ''} onClick={() => go(t.id)}>
             {t.icon()}
             {t.label}
-            {t.id === 'reels' && novas > 0 && <span className="badge">{novas > 99 ? '99+' : novas}</span>}
+            {t.id === 'vagas' && novas > 0 && <span className="badge">{novas > 99 ? '99+' : novas}</span>}
             {t.id === 'fila' && need > 0 && <span className="badge bad">{need}</span>}
           </button>
         ))}

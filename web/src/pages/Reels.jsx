@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
-import { ClaudeBox, Icon, JobTags, Logo, Reasons, Score, toast } from '../components/ui.jsx';
+import { ClaudeBox, Icon, JobTags, Logo, ModeSwitch, Reasons, Score, toast } from '../components/ui.jsx';
 
 const THRESHOLD = 110;
 
-export default function Reels({ onChange, go }) {
+export default function Reels({ onChange, go, setMode }) {
   const [items, setItems] = useState(null);
   const [done, setDone] = useState(0);
   const [drag, setDrag] = useState({ dx: 0, active: false });
@@ -106,9 +106,10 @@ export default function Reels({ onChange, go }) {
     <main className="main full">
       <div className="reels">
         <div className="reels-top">
-          <h1>Triagem</h1>
+          <h1>Vagas</h1>
           <span className="muted small">{items.length ? `${items.length} nova${items.length > 1 ? 's' : ''}` : ''}</span>
         </div>
+        <div style={{ padding: '0 4px 10px' }}><ModeSwitch mode="reels" setMode={setMode} /></div>
         {total > 0 && total <= 40 && (
           <div className="progress">{Array.from({ length: total }, (_, i) => <i key={i} className={i < done ? 'done' : ''} />)}</div>
         )}
@@ -117,7 +118,7 @@ export default function Reels({ onChange, go }) {
           <div className="empty" style={{ margin: 'auto' }}>
             <h2>{done ? 'Triagem em dia' : 'Nada para triar'}</h2>
             <div>{done ? `Você decidiu ${done} vaga${done === 1 ? '' : 's'}. As que forem suas já estão na fila do robô.` : 'Nenhuma vaga nova agora. Na lista, toque em Buscar agora.'}</div>
-            <button className="btn primary" onClick={() => go(done ? 'fila' : 'vagas')}>{done ? 'Ver fila de aplicação' : 'Ir para as vagas'}</button>
+            <button className="btn primary" onClick={() => (done ? go('fila') : setMode('lista'))}>{done ? 'Ver fila de aplicação' : 'Ver a lista'}</button>
           </div>
         ) : (
           <>

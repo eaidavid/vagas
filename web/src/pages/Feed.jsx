@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ago } from '../api.js';
-import { Icon, JobTags, Reasons, Score, toast } from '../components/ui.jsx';
+import { Icon, JobTags, ModeSwitch, Reasons, Score, toast } from '../components/ui.jsx';
 import JobSheet from './JobSheet.jsx';
 
 const FILTERS = [
@@ -10,7 +10,7 @@ const FILTERS = [
   { id: 'presencial', label: 'Presencial' },
 ];
 
-export default function Feed({ stats, onChange, go }) {
+export default function Feed({ stats, onChange, go, setMode }) {
   const [view, setView] = useState('nova');
   const [workplace, setWorkplace] = useState('');
   const [text, setText] = useState('');
@@ -92,6 +92,7 @@ export default function Feed({ stats, onChange, go }) {
       </div>
       <main className="main">
         <div className="wrap">
+          <ModeSwitch mode="lista" setMode={setMode} />
           <div className="chips">
             <button className={`chip ${view === 'nova' ? 'on' : ''}`} onClick={() => setView('nova')}>Novas{stats?.novasVisiveis ? ` · ${stats.novasVisiveis}` : ''}</button>
             <button className={`chip ${view === 'descartada' ? 'on' : ''}`} onClick={() => setView('descartada')}>Descartadas</button>
@@ -109,9 +110,6 @@ export default function Feed({ stats, onChange, go }) {
                 {data.total} vaga{data.total === 1 ? '' : 's'}
                 {last && <> · última busca {ago(last)}</>}
               </span>
-              {view === 'nova' && items.length > 0 && (
-                <button className="btn sm" onClick={() => go('reels')}>{Icon.reels(16)} Ver uma por vez</button>
-              )}
             </div>
           )}
 
