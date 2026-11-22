@@ -64,6 +64,9 @@ test('ATS: reconhece o sistema pelo link e junta a mesma candidatura', () => {
   assert.equal(detectAts('https://acme.wd1.myworkdayjobs.com/x'), 'workday');
   assert.equal(detectAts('https://carreiras.acme.com.br/vaga'), 'site');
   assert.equal(applyKey('https://empresa.gupy.io/jobs/123?jobBoardSource=linkedin'), applyKey('https://empresa.gupy.io/jobs/123/'));
+  // link novo da Gupy (/job/<base64>) = mesmo da vaga antiga (/jobs/<id>)
+  const b64 = Buffer.from(JSON.stringify({ jobId: 123, source: 'gupy_portal' })).toString('base64');
+  assert.equal(applyKey(`https://empresa.gupy.io/job/${b64}?jobBoardSource=gupy_portal`), applyKey('https://empresa.gupy.io/jobs/123'));
 });
 
 test('Gupy: converte o formato da API', () => {

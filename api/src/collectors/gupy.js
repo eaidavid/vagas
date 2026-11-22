@@ -1,8 +1,9 @@
-// Gupy: API pública que o portal de vagas usa. Não foi possível testar daqui;
-// se o endereço mudar de novo, o erro aparece em "Buscas" no painel.
+// Gupy: a mesma rota que o portal de vagas (portal.gupy.io) usa para listar vagas.
+// Se o endereço mudar de novo, o erro aparece em Perfil → Buscas.
 import { fetchJson, jitter } from './http.js';
 
-const HOSTS = ['https://employability-portal.gupy.io/api/v1/jobs', 'https://portal.api.gupy.io/api/v1/jobs'];
+const HOSTS = ['https://portal.gupy.io/api/job-search/jobs', 'https://employability-portal.gupy.io/api/v1/jobs'];
+const PAGE = 50;
 
 const WP = { remote: 'remoto', hybrid: 'hibrido', 'on-site': 'presencial', onsite: 'presencial' };
 
@@ -40,8 +41,8 @@ export async function collectGupy({ termos }, { log, emit }) {
   const seen = new Set();
   let base = null;
   for (const termo of termos) {
-    for (let offset = 0; offset < 300; offset += 100) {
-      const qs = new URLSearchParams({ jobName: termo, limit: '100', offset: String(offset) });
+    for (let offset = 0; offset < 300; offset += PAGE) {
+      const qs = new URLSearchParams({ jobName: termo, limit: String(PAGE), offset: String(offset) });
       let data = null;
       for (const host of base ? [base] : HOSTS) {
         try {
@@ -63,7 +64,7 @@ export async function collectGupy({ termos }, { log, emit }) {
         await emit(mapGupy(j));
         jobs++;
       }
-      if (list.length < 100) break;
+      if (list.length < PAGE) break;
       await jitter(1000, 2500);
     }
     await jitter(1000, 2500);

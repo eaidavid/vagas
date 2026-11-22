@@ -58,7 +58,11 @@ export function applyKey(url) {
   if (!url) return null;
   try {
     const u = new URL(url);
-    const path = u.pathname.replace(/\/+$/, '').replace(/\/apply$/, '');
+    let path = u.pathname.replace(/\/+$/, '').replace(/\/apply$/, '');
+    const g = /gupy\.io$/.test(u.hostname) && path.match(/^\/job\/([A-Za-z0-9_=-]+)$/);
+    if (g) {
+      try { const id = JSON.parse(Buffer.from(g[1], 'base64').toString('utf8')).jobId; if (id) path = `/jobs/${id}`; } catch { /* mantém */ }
+    }
     return `${u.hostname.toLowerCase().replace(/^www\./, '')}${path}`.toLowerCase();
   } catch {
     return null;
