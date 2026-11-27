@@ -8,6 +8,7 @@ import { collectLinkedin } from './linkedin.js';
 import { collectGupy } from './gupy.js';
 import { collectGreenhouse, collectLever } from './boards.js';
 import { collectRemotar, collectProgramathor, collectGithub } from './extras.js';
+import { autoEnqueue } from '../autopilot.js';
 
 const activity = [];
 export const recentActivity = () => activity.slice(-80);
@@ -144,6 +145,7 @@ export async function runCollectors(only = null) {
       summary[name] = { found, inserted, error };
     }
     await kvSet('lastCollect', { at: new Date().toISOString(), summary });
+    await autoEnqueue(log).catch((e) => log(`piloto automático: ${e.message}`));
   } finally {
     running = false;
   }
@@ -170,6 +172,7 @@ export function startScheduler() {
     const last = await kvGet('lastCollect');
     const due = !last || Date.now() - new Date(last.at).getTime() > hours * 3600000;
     if (due) runCollectors().catch((e) => log(`agenda: ${e.message}`));
+    else autoEnqueue(log).catch(() => {}); // completa a fila do dia (o limite reinicia à meia-noite)
   };
   setTimeout(tick, 15000);
   setInterval(tick, 10 * 60000);

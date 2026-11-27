@@ -188,7 +188,7 @@ function AppCard({ a, act }) {
           {lastFilled.length > 0 && (
             <div className="filled">
               <b>O que o robô preencheu</b>
-              {lastFilled.map((f, i) => <div key={i}><span>{f.campo}</span> {f.valor}</div>)}
+              {lastFilled.map((f, i) => <div key={i}><span>{f.campo}</span> {f.valor}{f.auto && <em className="auto-tag"> · resposta automática</em>}</div>)}
             </div>
           )}
         </div>

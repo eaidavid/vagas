@@ -251,3 +251,5 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.02em; margin: 0; }
 .mode-switch button { flex: 1; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 14px; color: var(--muted); }
 .mode-switch button.on { background: var(--text); color: var(--bg); }
 .reels .mode-switch { margin-bottom: 0; }
+
+.auto-tag { color: var(--warn); font-style: normal; font-size: 12px; }

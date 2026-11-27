@@ -177,14 +177,14 @@ export async function fillForm(page, { profile, job, resumePath, scope = null })
         if (idx < 0) { if (f.required) ask(f); continue; }
         if (f.kind === 'select') await loc(page, f.vid).selectOption({ index: idx });
         else await loc(page, vids[idx]).check({ force: true });
-        filled.push({ campo: f.label, valor: f.options[idx] });
+        filled.push({ campo: f.label, valor: f.options[idx], auto: !!ans?.auto });
         continue;
       }
 
       if (f.kind === 'combobox') {
         const answer = ans?.decline ? 'Decline' : ans?.value;
         const ok = answer && (await chooseFromList(page, loc(page, f.vid), answer, ans.alt || (ans.decline ? ['Prefer not', "I don't wish", 'Não desejo'] : [])));
-        if (ok) filled.push({ campo: f.label, valor: answer });
+        if (ok) filled.push({ campo: f.label, valor: answer, auto: !!ans?.auto });
         else if (f.required) ask({ ...f, options: await listOptions(page, loc(page, f.vid)) });
         continue;
       }
@@ -192,14 +192,16 @@ export async function fillForm(page, { profile, job, resumePath, scope = null })
       // texto / textarea
       if (!ans?.value) { if (f.required) ask(f); continue; }
       const el = loc(page, f.vid);
-      await el.fill(String(ans.value));
+      // campo numérico (ex.: pretensão salarial): só os números
+      const val = f.inputType === 'number' ? String(ans.value).replace(/[^\d,]/g, '').replace(/,\d+$/, '') || '0' : String(ans.value);
+      await el.fill(val);
       // campos de cidade com autocompletar: escolhe a sugestão se aparecer
       if (/location|cidade|city|localiza/.test(norm(f.label))) {
         await page.waitForTimeout(1200);
         const sug = page.locator('[role="option"]:visible, .pac-item:visible, .dropdown-results li:visible, [class*="location"] li:visible').first();
         if (await sug.count()) await sug.click().catch(() => {});
       }
-      filled.push({ campo: f.label, valor: String(ans.value).length > 80 ? `${String(ans.value).slice(0, 80)}…` : String(ans.value) });
+      filled.push({ campo: f.label, valor: String(ans.value).length > 80 ? `${String(ans.value).slice(0, 80)}…` : String(ans.value), auto: !!ans.auto });
     } catch (e) {
       if (f.required) ask(f);
     }

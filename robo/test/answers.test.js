@@ -43,3 +43,22 @@ test('carta e respostas que o Claude preparou para a vaga têm prioridade', () =
   assert.equal(answerFor({ label: 'Why do you want to work here? Cover letter', kind: 'textarea' }, profile, jobComClaude).value, 'Carta feita pelo Claude');
   assert.equal(answerFor({ label: 'Qual a sua pretensão salarial?', kind: 'text' }, profile, job).value, 'R$ 2.500');
 });
+
+test('respostas automáticas: só o que é verdade no perfil, e pergunta pessoal continua indo para você', () => {
+  const p = { ...profile, habilidades: ['HTML', 'CSS', 'JavaScript', 'React', 'Figma'], formacao: 'ADS na Unyleya' };
+  const A = (label, extra = {}) => answerFor({ label, kind: 'text', ...extra }, p, job);
+  assert.equal(A('Você concorda com a política de privacidade?', { kind: 'radio' }).value, 'Sim');
+  assert.equal(A('Quando você pode começar?').value, 'Imediata');
+  assert.equal(A('Possui experiência com React?', { kind: 'radio' }).value, 'Sim');
+  assert.equal(A('Possui experiência com Java?', { kind: 'radio' }).value, 'Não');
+  assert.match(A('Descreva sua experiência com Python').value, /ainda não tenho/i);
+  assert.equal(A('Quantos anos de experiência você tem?', { inputType: 'number' }).value, '0');
+  assert.equal(A('Qual sua escolaridade?', { kind: 'select' }).value, 'Superior em andamento');
+  assert.equal(A('Ano de conclusão do curso').value, '2027');
+  assert.ok(A('Fale um pouco sobre você', { kind: 'textarea' }).value.length > 40);
+  assert.ok(A('Quando você pode começar?').auto);
+  // não inventa nem decide por você
+  assert.equal(A('Qual o seu CPF?'), null);
+  assert.equal(A('Tem disponibilidade para viagens?', { kind: 'radio' }), null);
+  assert.equal(A('Aceita trabalhar aos fins de semana?', { kind: 'radio' }), null);
+});

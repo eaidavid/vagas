@@ -144,6 +144,16 @@ export default function Perfil({ onChange }) {
               <h2>Robô</h2>
               <div className="switch"><span>Ligado</span><Toggle on={robo.ligado} onChange={(v) => setRoboCfg({ ligado: v })} /></div>
               <div className="switch">
+                <span>Piloto automático<br /><span className="muted small">Coloca sozinho na fila as vagas com nota a partir de {robo.autoNota}, até o limite do dia</span></span>
+                <Toggle on={!!robo.autoAplicar} onChange={async (v) => { await setRoboCfg({ autoAplicar: v }); if (v) toast('Piloto automático ligado: as melhores vagas vão para a fila sozinhas'); }} />
+              </div>
+              {robo.autoAplicar && (
+                <div style={{ maxWidth: 260 }}>
+                  <label className="label" htmlFor="robo-auto-nota">Nota mínima para aplicar sozinho</label>
+                  <input id="robo-auto-nota" className="input" type="number" min="40" max="100" value={robo.autoNota} onChange={(e) => setRobo({ ...robo, autoNota: e.target.value })} onBlur={() => setRoboCfg({})} />
+                </div>
+              )}
+              <div className="switch">
                 <span>Modo ensaio<br /><span className="muted small">Preenche e para antes de enviar, com print pra conferir</span></span>
                 <Toggle on={robo.ensaio} onChange={(v) => setRoboCfg({ ensaio: v })} />
               </div>

@@ -79,13 +79,77 @@ export function answerFor(field, profile, job) {
   if (/github/.test(key)) return { value: L.github };
   if (/portfolio|website|site pessoal|personal site|\burl\b|blog/.test(key)) return { value: L.portfolio || L.github };
   if (/current company|empresa atual|current employer|^org$/.test(key)) return { value: field.required ? 'Projetos próprios (freelancer)' : '' };
-  if (/country|pais/.test(label) && !/sponsor|visa|work|authoriz/.test(label)) return { value: 'Brasil', alt: ['Brazil'] };
+  if (/\b(country|pais)\b/.test(label) && !/sponsor|visa|work|authoriz/.test(label)) return { value: 'Brasil', alt: ['Brazil'] };
   if (/\b(state|estado|uf)\b/.test(label) && !/united states/.test(label)) return { value: profile.estado === 'GO' ? 'Goiás' : profile.estado };
-  if (/city|cidade|location|localizacao|localidade|where are you (based|located)|onde voce mora/.test(key)) return { value: `${profile.cidade}, ${profile.estado}, Brasil` };
+  if (/\b(city|cidade|location|localizacao|localidade)\b|where are you (based|located)|onde voce mora/.test(key) && !/privacidade|politica/.test(label)) return { value: `${profile.cidade}, ${profile.estado}, Brasil` };
   if (/cover letter|carta de apresentacao|why do you want|por que voce quer|why are you interested|motivation|motivacao/.test(key) && field.kind === 'textarea') return { value: coverLetter(profile, job) };
   if (/how (did )?you (hear|find|learn)|heard about|como (voce )?(soube|conheceu|ficou sabendo|chegou)|onde (voce )?viu|source|fonte/.test(label)) return { value: 'LinkedIn', alt: ['Job board', 'Site de vagas', 'Other', 'Outro'] };
 
   if (bank) return { value: bank };
+  return smartAnswer(field, profile, job, label);
+}
+
+/* Habilidades do currículo com apelidos, para responder "tem experiência com X?" com honestidade */
+const SKILL_ALIASES = {
+  html: /\bhtml5?\b/, css: /\bcss3?\b/, javascript: /\b(javascript|js)\b/, typescript: /\b(typescript|ts)\b/, react: /\breact/,
+  tailwind: /\btailwind/, 'node.js': /\bnode/, postgresql: /\b(postgres|postgresql|sql)\b/, git: /\bgit\b/, github: /\bgithub\b/,
+  figma: /\bfigma\b/, postman: /\bpostman\b/, 'apis rest': /\b(api|apis|rest)\b/, docker: /\bdocker\b/, 'ui/ux': /\b(ui|ux|usabilidade)\b/,
+};
+const TECH_WORDS = /\b(java|python|php|c#|\.net|ruby|golang|kotlin|swift|flutter|angular|vue|aws|azure|gcp|kubernetes|linux|windows server|redes|excel|power ?bi|sap|salesforce|jira|selenium|cypress|ruby|sql server|oracle|mongodb|delphi|cobol|photoshop|illustrator)\b/;
+const yes = { value: 'Sim', alt: ['Yes', 'Concordo', 'Aceito', 'Estou ciente', 'I agree'] };
+
+/**
+ * Respostas automáticas para as perguntas mais comuns de formulário, só com o que é verdade no perfil.
+ * O que não dá para responder com segurança (CPF, idade, CNH, viagens, plantão...) continua indo para "precisa de você".
+ */
+function smartAnswer(field, profile, job, label) {
+  const auto = (r) => (r ? { ...r, auto: true } : null);
+  const isChoice = ['radio', 'select', 'combobox', 'checkbox'].includes(field.kind);
+  const skills = (profile.habilidades || []).map((h) => norm(h));
+
+  // Nunca inventar documentos ou dados pessoais que não estão no perfil
+  if (/\b(cpf|rg|cnh|carteira de motorista|data de nascimento|idade|birth|age|endereco|cep|numero da casa|pis)\b/.test(label)) return null;
+
+  // Coisas de vida pessoal que só você decide (viagens, plantão, fim de semana, mudança de cidade)
+  const pessoal = /viag|travel|plantao|fim de semana|fins de semana|weekend|mudar de cidade|mudanca|relocat|noturno|madrugada/.test(label);
+
+  // Aceites e declarações
+  if (!pessoal && /\b(concorda|aceita|aceito|esta ciente|estou ciente|declaro|autoriza|confirmo|li e aceito|i agree|i acknowledge|i confirm|consent|i have read)\b/.test(label)) return auto(yes);
+
+  // Disponibilidade de início e regime (local já foi filtrado pela nota)
+  if (/(quando|data).{0,20}(comecar|iniciar|inicio)|disponibilidade (para|de) (inicio|comecar|iniciar)|start date|when can you start|earliest start/.test(label)) return auto({ value: 'Imediata', alt: ['Imediatamente', 'Immediately', 'Imediato'] });
+  if (/disponibilidade (para|de) trabalh(ar|o) (presencial|hibrido|remoto|home office|em goiania|na regiao)|horario comercial|trabalhar (de forma )?(remota|hibrida)|regime (hibrido|remoto)/.test(label)) return auto(yes);
+  if (!pessoal && /(gostaria|tem interesse|interessad|esta disposto|estaria disposto|would you be willing|are you interested|deseja participar)/.test(label)) return auto(yes);
+
+  // Anos de experiência: honesto (início de carreira)
+  if (/(quantos anos|anos de experiencia|tempo de experiencia|years of (professional )?experience|how many years)/.test(label)) {
+    if (field.inputType === 'number') return auto({ value: '0' });
+    return auto({ value: 'Menos de 1 ano', alt: ['Até 1 ano', 'Sem experiência', 'Nenhuma', '0', 'Less than 1 year', 'No experience', '0-1'] });
+  }
+
+  // "Tem experiência/conhecimento com X?"
+  if (/(possui|tem|voce tem|do you have|have you|conhece|domina).{0,30}(experiencia|conhecimento|familiaridade|vivencia|experience|knowledge)|(experiencia|conhecimento|experience|knowledge) (com|em|with|in) /.test(label)) {
+    const known = Object.entries(SKILL_ALIASES).find(([name, re]) => re.test(label) && skills.some((s) => s.includes(name.split(' ')[0])));
+    if (known) {
+      const nome = (profile.habilidades || []).find((h) => norm(h).includes(known[0].split(' ')[0])) || known[0];
+      return auto(isChoice ? yes : { value: `Sim, uso ${nome} em projetos pessoais e no curso de ADS.` });
+    }
+    if (TECH_WORDS.test(label) || isChoice) return auto(isChoice ? { value: 'Não', alt: ['No'] } : { value: 'Ainda não tenho experiência prática com isso, mas estou estudando e aprendo rápido.' });
+  }
+
+  // Formação
+  if (/(escolaridade|grau de (instrucao|escolaridade)|nivel de (ensino|instrucao|escolaridade)|formacao academica|education level|highest (level of )?education|degree)/.test(label)) {
+    return auto({ value: 'Superior em andamento', alt: ['Ensino superior incompleto', 'Superior incompleto', 'Cursando ensino superior', 'Graduação em andamento', 'Tecnólogo em andamento', "Bachelor's degree (in progress)", 'Some college'] });
+  }
+  if (/(esta cursando|cursando (ensino )?superior|estudante|currently (enrolled|studying)|matriculad)/.test(label)) return auto(isChoice ? yes : { value: profile.formacao });
+  if (/(instituicao|faculdade|universidade|university|college|school name)/.test(label)) return auto({ value: 'Unyleya' });
+  if (/^(curso|course|major|area de formacao)|nome do curso|qual (o )?(seu )?curso/.test(label)) return auto({ value: 'Análise e Desenvolvimento de Sistemas' });
+  if (/(ano de (conclusao|formatura)|previsao de (conclusao|formatura)|graduation (year|date)|expected graduation)/.test(label)) return auto({ value: '2027' });
+
+  // Textos abertos sobre você: usa a carta (a do Claude, se ele preparou para esta vaga)
+  if (field.kind === 'textarea' && /(fale (um pouco )?sobre|conte (um pouco )?sobre|apresente-se|tell us (a bit )?about|about yourself|por que (voce|vc)|why (do )?you|motivacao|mensagem|recrutador|informacoes adicionais|additional information|comentarios|observacoes|resumo profissional)/.test(label)) {
+    return auto({ value: coverLetter(profile, job) });
+  }
   return null;
 }
 

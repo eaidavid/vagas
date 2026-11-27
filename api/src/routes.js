@@ -8,6 +8,7 @@ import { runCollectors, isRunning, recentActivity, rescoreAll } from './collecto
 import { enqueue, setStatus, claimNext, report } from './queue.js';
 import { ATS_INFO } from './ats.js';
 import { AREAS } from './scoring.js';
+import { roboConfig, appliedToday, autoEnqueue } from './autopilot.js';
 import { SERVICOS, contasPublicas, salvarConta, contasParaRobo } from './contas.js';
 
 const DATA = process.env.DATA_DIR || '/data';
@@ -15,14 +16,7 @@ const CV = path.join(DATA, 'curriculo.pdf');
 const PRINTS = path.join(DATA, 'prints');
 
 /* Ajustes do robô (Perfil → Robô). Começa ligado e em modo ensaio: preenche tudo e não envia. */
-const ROBO_DEFAULT = { ligado: true, ensaio: true, limiteDia: 20, horaInicio: 8, horaFim: 22, pausaMin: 2, pausaMax: 6 };
-async function appliedToday() {
-  const { rows } = await q("select count(*)::int n from applications where status = 'aplicada' and (updated_at at time zone 'America/Sao_Paulo')::date = (now() at time zone 'America/Sao_Paulo')::date");
-  return rows[0].n;
-}
-export async function roboConfig() {
-  return { ...ROBO_DEFAULT, ...(await kvGet('roboConfig', {})) };
-}
+export { roboConfig } from './autopilot.js';
 
 const summary = (r) => ({
   id: r.id,
@@ -193,9 +187,13 @@ export function registerRoutes(app) {
       horaFim: num(b.horaFim, cur.horaFim, 1, 24),
       pausaMin: num(b.pausaMin, cur.pausaMin, 0, 60),
       pausaMax: num(b.pausaMax, cur.pausaMax, 0, 120),
+      autoAplicar: b.autoAplicar ?? cur.autoAplicar,
+      autoNota: num(b.autoNota, cur.autoNota, 40, 100),
     };
     await kvSet('roboConfig', next);
-    return next;
+    // Ligou o piloto automático: já enche a fila agora
+    const enfileiradas = next.autoAplicar ? await autoEnqueue() : 0;
+    return { ...next, enfileiradas };
   });
   /* Conectar conta: abre a página de login no navegador do robô e devolve a janela (tela do robô já com a senha) */
   const LOGIN_PAGES = { linkedin: 'https://www.linkedin.com/login', gupy: 'https://portal.gupy.io/', google: 'https://accounts.google.com/' };

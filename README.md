@@ -46,6 +46,11 @@ Um contêiner com Chromium que pega uma vaga por vez da fila e aplica.
 - **Por site** (`robo/src/apply.js`): Lever e Greenhouse direto no formulário; LinkedIn pela Candidatura simplificada
   (modal com etapas) ou seguindo o botão para o site externo; Gupy pelas etapas da candidatura; outros sites pelo
   formulário que aparecer.
+- **Piloto automático** (Perfil → Robô, começa desligado): as vagas novas com nota a partir de X entram na fila sozinhas
+  depois de cada busca, até o limite do dia; pula vagas por e-mail e sites cujo login ainda não está pronto.
+- **Respostas automáticas**: perguntas comuns (aceites, início, "tem experiência com X?", anos de experiência,
+  escolaridade, faculdade, "fale sobre você") são respondidas só com o que é verdade no perfil e aparecem marcadas no
+  histórico. CPF, idade, CNH, viagens, plantão e fim de semana continuam indo para você.
 - **Modo ensaio (começa ligado)**: preenche tudo e para antes de enviar, com print da tela na Fila.
 - **Limites**: liga/desliga, candidaturas por dia, horário e pausa de 2 a 6 min entre envios (Perfil → Robô).
 - **Conectar conta (LinkedIn, Gupy)**: o botão "Conectar" no Perfil abre, dentro do app, o navegador do robô já na
